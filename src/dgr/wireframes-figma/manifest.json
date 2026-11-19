@@ -1,0 +1,19 @@
+{
+  "name": "Our Budget · Wireframes",
+  "id": "4080982247319764941",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": [
+    "figma"
+  ],
+  "documentAccess": "dynamic-page",
+  "menu": [
+    { "name": "Giao diện chi tiết", "command": "detail" },
+    { "name": "Wireframe 36 khung", "command": "wireframe" }
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "none"
+    ]
+  }
+}

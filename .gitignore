@@ -1,0 +1,12 @@
+# AI and agent tooling
+/agent/
+/.agents/
+/.codex/
+/.claude/
+/.cursor/
+/graphify-out/
+/AGENTS.md
+
+# Local IDE settings and Word lock files
+/src/.idea/
+~$*
