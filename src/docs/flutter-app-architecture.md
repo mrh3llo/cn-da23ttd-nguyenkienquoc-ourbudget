@@ -93,6 +93,16 @@ Mỗi màn hình hoặc biểu mẫu có ViewModel riêng. Giữ trạng thái t
 
 ## 4. Thứ tự triển khai và nghiệm thu
 
+### Bổ sung thiết kế ngày 20/11/2026 — chưa triển khai
+
+Trong `auth/`, dự kiến dùng `google_sign_in` để lấy ID token, gửi PHP và nhận phiên OurBudget. ViewModel xử lý chọn/hủy tài khoản, lỗi token và yêu cầu liên kết tài khoản hiện có. Token Google không thay thế token API; khôi phục phiên không tự tạo sự kiện đăng nhập mới. [Setup Google](google-email-setup.md).
+
+Nguồn tiền dùng `wallets_priority` tăng dần, mặc định 0, tiếp theo 1, 2, …; bộ chọn lấy thứ tự được API xác nhận. Danh mục/loại ví dùng mã icon ánh xạ sang Material Icons cục bộ và fallback; logo thương hiệu là asset được duyệt. Flaticon là phương án thay thế, không phải phụ thuộc mặc định. Không thêm gói chỉ để thay bộ icon đã có.
+
+Email do backend gửi sau thao tác thành công; Flutter hiển thị kết quả nghiệp vụ, không chờ SMTP hoặc giữ mật khẩu mail. Nếu hiển thị trạng thái thư, phân biệt gửi lỗi với giao dịch đã lưu; không yêu cầu ghi lại giao dịch để gửi lại thư. Thêm giao diện xác minh email/liên kết Google theo hợp đồng. [Quy tắc và ca nghiệm thu](proposal-google-email-icons.md).
+
+### Thứ tự thực hiện
+
 1. **Nền tảng.** Tạo dự án Flutter cho Android, lắp theme, điều hướng, Provider và nguồn dữ liệu mô phỏng. Chạy trên giả lập và thiết bị thật, kiểm tra tiếng Việt và chế độ bàn phím.
 2. **Luồng chính.** Dựng cổng tài khoản, bốn tab, Trang chủ và nhập nhanh. Đối chiếu khung Figma ở 390 × 844, rồi thử cỡ chữ lớn, màn hình hẹp, vùng an toàn, nút Back và các nhánh lỗi.
 3. **Tích hợp giao dịch.** Kiểm chứng hợp đồng tài khoản, danh mục và ví với backend, sau đó nối một luồng hoàn chỉnh từ đăng nhập đến tạo giao dịch và làm mới số dư, lịch sử. Kiểm tra thêm sửa, xóa, chuyển tiền và tình huống mất mạng ngay sau khi bấm Lưu.

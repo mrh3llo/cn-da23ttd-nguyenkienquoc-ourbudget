@@ -1,5 +1,7 @@
 # Đề xuất kiến trúc hệ thống OurBudget
 
+**Lưu ý phiên bản:** đây là bản đề xuất ban đầu. Dùng [kiến trúc chốt hiện hành](final-system-architecture.md) và [bổ sung ngày 20/11/2026](proposal-google-email-icons.md) khi triển khai. Quy ước mới là ví mặc định có thứ tự 0, tăng dần sau đó; Google Sign-In, icon cục bộ và email thông báo hiện ở mức đề xuất.
+
 - **Trạng thái** Bản nháp để duyệt trước khi cài đặt back-end và RESTful API.
 - **Ràng buộc đã chốt** Phát triển ứng dụng bằng Android Studio, viết API bằng PHP và lưu dữ liệu trong MySQL. Giai đoạn hiện tại hoàn thiện bản vẽ và đặc tả Markdown trước khi viết mã.
 

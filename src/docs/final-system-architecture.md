@@ -1,5 +1,7 @@
 # Kiến trúc hệ thống OurBudget
 
+**Tiến độ bước 03:** đã bổ sung migration thứ tự ví 0, 1, 2, …, identity Google, xác minh email, outbox và nền PHP/worker. [Hợp đồng HTTP](http-api-contract.md) và [hướng dẫn backend](../backend/README.md) là tài liệu triển khai. Luồng đăng nhập Google, email theo nghiệp vụ và bộ chọn icon chưa nối vào Flutter; thực hiện ở bước 04–07. [Chi tiết](proposal-google-email-icons.md) · [Setup Google/email](google-email-setup.md).
+
 Bản chốt thiết kế cho OurBudget trên Android. Phiên bản đầu bao phủ UC1–UC24, gồm tài khoản, nguồn tiền nhập thủ công, danh mục thu/chi, giao dịch, ngân sách và báo cáo. Ảnh hóa đơn thuộc hướng phát triển sau phiên bản đầu. Ví điện tử và tài khoản ngân hàng được theo dõi như nguồn tiền nhập thủ công, độc lập với hệ thống của tổ chức cung cấp dịch vụ.
 
 ## Đối chiếu với báo cáo đề tài
@@ -23,6 +25,8 @@ Kiến trúc đề xuất tương thích với nền tảng công nghệ và ph�
 | Ứng dụng Flutter/Dart | Phát triển bằng Android Studio, chạy trên Android. Giao diện kiểm tra biểu mẫu, gửi yêu cầu HTTPS/JSON và dùng Provider để cập nhật trạng thái hiển thị từ dữ liệu máy chủ. |
 | RESTful API PHP | Triển khai một ứng dụng máy chủ, tổ chức theo phân hệ. Bộ định tuyến và controller xử lý HTTP/JSON, lớp xác thực xác định tài khoản, lớp dịch vụ kiểm tra nghiệp vụ và quản lý giao tác, lớp truy cập dữ liệu dùng PDO với câu lệnh tham số hóa. |
 | MySQL InnoDB | Nguồn dữ liệu chính, dùng `utf8mb4`, khóa ngoại và chỉ mục cho lịch sử giao dịch, ngân sách và báo cáo. Kết nối cơ sở dữ liệu thuộc về API PHP. |
+| Google Identity (đề xuất) | Xác minh danh tính Google để backend liên kết tài khoản và cấp phiên OurBudget. |
+| Worker email và dịch vụ gửi thư (đề xuất) | Đọc outbox sau commit, gửi thông báo và quản lý retry độc lập với phản hồi lưu giao dịch. |
 
 ## Phân hệ và hợp đồng API
 
@@ -42,7 +46,7 @@ UC23 cập nhật số dư và UC24 kiểm tra hạn mức được thực hiệ
 
 **Danh mục.** Giữ hai bảng `income_categories` và `outcome_categories` theo bản Word. Mỗi bảng có khóa ngoại `users_id` cho danh mục do người dùng tạo. Giá trị `NULL` dành cho danh mục hệ thống dùng chung và chỉ đọc đối với tài khoản thông thường. API cung cấp một tài nguyên danh mục chung và xác định bảng theo loại danh mục. Khoản thu tham chiếu đúng một `income_id`, khoản chi tham chiếu đúng một `outcome_id`, còn chuyển nội bộ để trống cả hai. Các tham chiếu này thay cho `expensecate_id` cũ.
 
-**Ví và chuyển tiền.** Duy trì `wallets_opening_balance` và `wallets_current_balance`. Ví mới có số dư hiện tại bằng số dư đầu kỳ. Khi thay đổi số dư đầu kỳ theo UC8, cập nhật số dư hiện tại theo phần chênh lệch trong cùng giao tác. Ví mặc định là ví đang hoạt động có `wallets_priority` cao nhất của tài khoản. Khi bằng nhau, chọn theo `wallets_id` tăng dần để kết quả ổn định. Khi không có ví hoạt động, người dùng cần tạo hoặc kích hoạt một ví trước khi ghi giao dịch.
+**Ví và chuyển tiền.** Duy trì `wallets_opening_balance` và `wallets_current_balance`. Ví mới có số dư hiện tại bằng số dư đầu kỳ. Khi thay đổi số dư đầu kỳ theo UC8, cập nhật số dư hiện tại theo phần chênh lệch trong cùng giao tác. `wallets_priority` là thứ tự không âm: ví mặc định đang hoạt động có giá trị 0, tiếp theo là 1, 2, … Chọn theo `wallets_priority ASC, wallets_id ASC`; ID là tiêu chí phụ khi dữ liệu cũ còn trùng. Thêm/đổi thứ tự/ngừng hoạt động ví phải chuẩn hóa thứ tự nhóm ví hoạt động trong cùng giao tác theo tài khoản. Khi không có ví hoạt động, người dùng cần tạo hoặc kích hoạt một ví trước khi ghi giao dịch.
 
 Lưu chuyển nội bộ thành một bản ghi `transactions` có loại `TRANSFER`, ví nguồn tại `wallets_id`, ví đích tại `destination_wallet_id` và số tiền dương. Hai trường ví là khóa ngoại, phải trỏ đến hai ví khác nhau thuộc cùng tài khoản. Dùng trường loại giao dịch để phân biệt `INCOME`, `EXPENSE` và `TRANSFER`. Lịch sử có thể hiển thị chuyển nội bộ với loại riêng. Tổng thu, tổng chi và tổng dùng cho ngân sách chỉ lấy các loại thu hoặc chi tương ứng.
 
@@ -64,6 +68,16 @@ Quyền truy cập được kiểm tra theo người dùng lấy từ phiên xá
 
 ## Đặc tả triển khai và tiêu chí nghiệm thu
 
-ERD và PDM đích MySQL cần thể hiện các khóa ngoại, chỉ mục, quan hệ tài khoản, phiên đăng nhập, khôi phục mật khẩu và chống ghi trùng trước khi sinh DDL. Framework PHP, cấu hình môi trường chạy, sơ đồ triển khai và đặc tả chi tiết từng endpoint thuộc bước thiết kế triển khai.
+### Mở rộng đề xuất Google, icon và email
+
+Đề xuất `POST /api/v1/auth/google` để đổi Google ID token đã được PHP xác minh thành phiên OurBudget. Danh tính liên kết qua `provider + sub` trong bảng dự kiến `user_identities`; không tự gộp tài khoản chỉ vì email trùng. Tài khoản chỉ dùng Google có thể không có hash mật khẩu nội bộ. Email liên hệ được xác minh trước khi nhận dữ liệu tài chính. [Hướng dẫn OAuth Android/Web client](google-email-setup.md).
+
+Đề xuất dùng Material Icons cục bộ với mã icon ổn định và fallback; logo ví thương hiệu dùng asset có quyền sử dụng. Flaticon API là phương án thay thế qua backend nếu cần kho icon rộng hơn; không nhúng khóa API trong APK.
+
+Email dành cho đăng ký, đăng nhập chủ động thành công và tạo/sửa/xóa thu chi đã commit. PHP ghi `email_outbox` cùng giao tác nghiệp vụ; worker gửi sau commit bằng tài khoản hệ thống, retry có giới hạn. Lỗi SMTP không đảo ngược giao dịch đã lưu. Khóa sự kiện ngăn tạo trùng outbox khi replay; SMTP không bảo đảm chuyển phát đúng một lần trong mọi tình huống. Đăng ký tự cấp phiên không phát thêm thư đăng nhập; khôi phục phiên không gửi mail. [Phạm vi, schema đề xuất và nghiệm thu](proposal-google-email-icons.md).
+
+### Điều kiện triển khai
+
+ERD và PDM đích MySQL cần thể hiện các khóa ngoại, chỉ mục, quan hệ tài khoản, phiên đăng nhập, khôi phục mật khẩu và chống ghi trùng trước khi sinh DDL từ mô hình. Bước 03 dùng PHP 8.2/PDO trực tiếp, chưa cần framework; PHPMailer phụ trách MIME/SMTP. Cấu hình nằm ngoài webroot và đọc giá trị cục bộ/biến môi trường. Mô hình native còn chờ đồng bộ theo metadata MySQL; chi tiết endpoint nghiệp vụ được chốt trong bước 04–09. [Hợp đồng HTTP](http-api-contract.md) và [cách chạy](../backend/README.md).
 
 Các ca nghiệm thu trọng tâm bao gồm cách ly hai tài khoản, thu hồi phiên, từ chối mã khôi phục hết hạn hoặc đã dùng, tạo giao dịch chỉ một lần khi gửi lại, cập nhật số dư đúng khi ghi đồng thời và rollback khi một bước ghi thất bại. Đối với báo cáo và ngân sách, cần kiểm tra chuyển nội bộ, sửa hoặc xóa khoản chi, giao dịch sát biên kỳ, các ngưỡng 80% và 100%, và trường hợp truy vấn ngân sách lỗi sau khi giao dịch đã lưu.

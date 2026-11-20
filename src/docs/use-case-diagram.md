@@ -13,6 +13,8 @@ Hệ thống được phân rã chi tiết thành 5 phân hệ chính với các
 *   **UC4 - Đăng xuất:** Kết thúc phiên làm việc an toàn.
 *   **UC5 - Cập nhật thông tin cá nhân:** Thay đổi tên, avatar hoặc mật khẩu hiện tại.
 
+**Bổ sung đề xuất 20/11/2026, chưa triển khai:** UC1/UC2 có phương thức Google, nhận phiên nội bộ sau khi backend xác minh ID token; trùng email cần xác minh trước khi liên kết. UC1/UC2 thành công tạo sự kiện email; UC5 đổi email cần xác minh địa chỉ mới. UC6/UC8 quản lý thứ tự ví với mặc định 0 rồi tăng dần; UC11–UC14 chọn icon cục bộ có fallback. UC15/UC18/UC19 tạo email khi thêm/sửa/xóa thu chi đã commit, gửi lại cùng thao tác không thêm sự kiện. Đây là mở rộng các use-case hiện có, chưa thêm ID UC mới. [Đặc tả bổ sung](proposal-google-email-icons.md) · [Setup Google/email](google-email-setup.md).
+
 ### Phân hệ 2: Quản lý nguồn tiền / Ví (Wallet Management)
 *   **UC6 - Thêm nguồn tiền:** Khởi tạo một ví mới (Ví tiền mặt, tài khoản ngân hàng, ví điện tử) kèm số dư ban đầu.
 *   **UC7 - Xem danh sách nguồn tiền:** Hiển thị toàn bộ các ví đang có và tổng số dư tương ứng.

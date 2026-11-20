@@ -1,0 +1,11 @@
+{
+    "name": "ourbudget/api",
+    "description": "OurBudget PHP API and transactional email worker",
+    "type": "project",
+    "require": {
+        "php": "^8.2",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "phpmailer/phpmailer": "^7.0"
+    }
+}

@@ -10,3 +10,11 @@
 # Local IDE settings and Word lock files
 /src/.idea/
 ~$*
+
+# Local server settings, OAuth downloads and runtime data
+/src/mobile/storage/secret/
+**/client_secret_*.json
+/src/backend/config/local.php
+/src/backend/vendor/
+/src/backend/storage/*
+!/src/backend/storage/.gitkeep

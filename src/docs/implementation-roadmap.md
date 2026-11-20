@@ -1,5 +1,7 @@
 # Lộ trình triển khai OurBudget cho Android
 
+**Cập nhật bước 03:** đã triển khai SQL nâng cấp, nền PHP, hợp đồng HTTP và worker email; xem [báo cáo kiểm thử](../bugs/TEST-004-step03-foundation.md). Google Sign-In và email theo sự kiện nghiệp vụ tiếp tục ở bước 04–07, icon ở bước 05. Đọc [đặc tả bổ sung](proposal-google-email-icons.md) và [setup Google/email](google-email-setup.md).
+
 Hiện trạng bắt đầu là cây thư mục `src/mobile/ourbudget/`. Mốc đầu tiên là chạy được ứng dụng Flutter trong Android Studio. Mốc chức năng đầu tiên là đăng nhập, tạo hoặc chọn ví, ghi một khoản thu/chi và thấy số dư cùng lịch sử cập nhật từ API. Sau đó mới hoàn thiện sửa/xóa, chuyển tiền, ngân sách và báo cáo. Kế hoạch bao gồm phần PHP/MySQL cần có để nghiệm thu ứng dụng với dữ liệu thật. [Cây thư mục Flutter](../mobile/ourbudget/README.md) · [Kiến trúc hệ thống](final-system-architecture.md) · [Kiến trúc Flutter](flutter-app-architecture.md) · [Use-case UC1–UC24](use-case-diagram.md) · [Luồng Figma](user-flow-our-budget.md)
 
 ## Cách thực hiện từng bước
@@ -37,6 +39,9 @@ Làm theo thứ tự trong bảng. Trong mỗi bước có tích hợp, xác đ�
 
 ## Bước 03. Chuẩn bị PHP/MySQL và hợp đồng dùng chung
 
+**Tiến độ triển khai:** đã có [SQL 001–004](../database/README.md), [API PHP và worker](../backend/README.md), [hợp đồng và fixtures HTTP](http-api-contract.md), kiểm thử migration/outbox và bài kiểm thử Android gọi API thật. [Báo cáo TEST-004](../bugs/TEST-004-step03-foundation.md) ghi kết quả thực tế. **Chưa chốt nghiệm thu toàn bộ bước 03:** tệp ERD/PDM native vẫn cần đồng bộ và mở kiểm tra trong PowerDesigner; [bản đối chiếu 14 bảng](../database/model-reference.md) đã được xuất trực tiếp từ MySQL. Báo cáo TEST-003 giữ nguyên như bằng chứng phiên bản 10 bảng cũ.
+
+
 1. Kiểm tra nơi đặt mã PHP, môi trường chạy, MySQL và cách cung cấp cấu hình phát triển. Kiểm tra đích PowerDesigner trước khi sinh SQL vì PDM hiện đặt SAP SQL Anywhere 17. Đối chiếu ERD và PDM với kiến trúc đích MySQL InnoDB, sau đó dùng migration hoặc DDL đã kiểm tra trên cơ sở dữ liệu phát triển. Cơ sở dữ liệu này cần dựng lại được từ schema và dữ liệu mẫu.
 2. Chuẩn bị bảng người dùng, phiên và khôi phục mật khẩu, ví, danh mục thu/chi, giao dịch, khóa chống ghi trùng và ngân sách. Đối chiếu khóa ngoại, trạng thái hoạt động, chỉ mục theo tài khoản và ngày phát sinh, cùng `BIGINT` cho tiền. Chuẩn bị hai tài khoản thử độc lập và danh mục hệ thống dùng chung.
 3. Chốt quy ước xác thực, cấu trúc lỗi có mã nghiệp vụ và lỗi theo trường, quy tắc phân trang và mẫu yêu cầu/phản hồi. Ghi rõ `401`, `404`, `409`, `422` và `500` để Flutter xử lý khác nhau. Chi tiết endpoint được chốt theo từng bước chức năng. Trong môi trường phát triển, kiểm tra đường kết nối từ Android Emulator hoặc thiết bị thật tới PHP và cấu hình HTTPS cho bản phát hành.
@@ -53,7 +58,7 @@ Làm theo thứ tự trong bảng. Trong mỗi bước có tích hợp, xác đ�
 
 ## Bước 05. Nguồn tiền và danh mục · UC6–UC9, UC11–UC14
 
-1. Nối `wallets/` với danh sách, tạo, sửa và xóa/ngừng sử dụng ví. API khởi tạo số dư hiện tại bằng số dư đầu kỳ. Khi sửa số dư đầu kỳ, áp dụng phần chênh lệch trong cùng giao tác. Chọn ví mặc định trong nhóm đang hoạt động theo độ ưu tiên giảm dần, rồi theo ID tăng dần khi bằng nhau.
+1. Nối `wallets/` với danh sách, tạo, sửa và xóa/ngừng sử dụng ví. API khởi tạo số dư hiện tại bằng số dư đầu kỳ. Khi sửa số dư đầu kỳ, áp dụng phần chênh lệch trong cùng giao tác. Ví mặc định có `wallets_priority = 0`, tiếp theo là 1, 2, …; chọn ví hoạt động theo thứ tự tăng dần rồi ID tăng dần. Chuẩn hóa thứ tự trong giao tác khi đổi mặc định, thêm/ngừng sử dụng/kích hoạt lại ví; kiểm tra cập nhật đồng thời và không có ví hoạt động.
 2. Nối `categories/` với hai loại danh mục thu và chi. Cho xem danh mục hệ thống ở chế độ chỉ đọc và chỉ sửa danh mục tùy chỉnh của tài khoản hiện tại. Dùng định danh kèm loại danh mục ở nơi hợp đồng yêu cầu. Với ví và danh mục còn tham chiếu, dùng trạng thái ngừng hoạt động và giữ nhãn cho lịch sử. Kiểm tra hành vi này lại ở bước 07 sau khi đã có giao dịch.
 3. Dùng chung dữ liệu từ repository cho màn hình danh sách và bộ chọn trong biểu mẫu ghi nhanh. Khi chưa có ví hoạt động, dẫn người dùng đến tạo ví. Sau khi sửa hoặc xóa, làm mới bộ chọn và danh sách liên quan.
 
@@ -110,3 +115,20 @@ Làm theo thứ tự trong bảng. Trong mỗi bước có tích hợp, xác đ�
 | UC22 | 09 · báo cáo |
 | UC23 | 06 và 07 · tạo, sửa, xóa, chuyển tiền và cập nhật số dư |
 | UC24 | 08 · cảnh báo sau khi commit và tải lại ngân sách |
+
+## Công việc bổ sung theo đề xuất mới
+
+Thực hiện các mục dưới đây ngay trong bước tương ứng, trước khi chuyển sang bước phụ thuộc. Phần nền SQL/PHP của bước 03 đã có mã; các luồng nghiệp vụ tiếp tục theo từng bước.
+
+| Bước | Công việc bổ sung | Nghiệm thu bổ sung |
+| --- | --- | --- |
+| 02 | Chốt mã Material Icons, ánh xạ cục bộ, bộ chọn/fallback và quyền dùng logo | Offline, mã lạ, logo thiếu và nhãn trợ năng |
+| 03 | Đồng bộ ERD/PDM và migration: ưu tiên ASC, seed 0..N−1; `user_identities`, mật khẩu nullable, xác minh email, `email_outbox`; cấu hình worker/mail | Dựng mới và nâng cấp dữ liệu thử an toàn; rollback không để lại outbox |
+| 04 | OAuth Android/Web client; xác minh ID token, liên kết có xác minh, phiên nội bộ; email đăng ký/đăng nhập và xác minh địa chỉ | Token sai/hết hạn, email trùng, Google-only, debug/release SHA-1; khôi phục phiên không gửi mail |
+| 05 | Thứ tự ví 0..N−1 và đổi mặc định trong giao tác; danh mục icon theo allowlist | Ví 0 được chọn, cập nhật đồng thời không tạo nhiều mặc định; đọc được icon cũ |
+| 06 | Outbox tạo thu/chi cùng giao tác/idempotency; gửi sau commit | Replay không thêm outbox, SMTP lỗi vẫn giữ giao dịch |
+| 07 | Email sửa/xóa thu chi, snapshot trước xóa; sự kiện phân biệt từng lần sửa | Rollback không gửi thư, hai lần sửa thật có hai sự kiện |
+| 08–09 | Giữ nguồn tổng hợp ngân sách/báo cáo từ giao dịch đã commit | Gửi mail không làm thay đổi số liệu |
+| 10 | Kiểm tra email xác minh, timeout sau gửi, worker dừng và hết lượt retry; Google với chứng chỉ release | Báo cáo riêng kết quả nghiệp vụ và chuyển phát; ghi giới hạn trùng thư của SMTP |
+
+Dùng mailbox thử có kiểm soát khi nghiệm thu email. Đăng ký tự cấp phiên chỉ phát sự kiện đăng ký; với email chưa xác minh, gửi thư xác minh và chỉ phát thông báo chứa dữ liệu tài khoản/tài chính sau xác minh. Bộ kiểm thử mới chạy qua SQL 001–004; 34 kiểm tra cũ chỉ là nhóm kiểm tra baseline trong bộ mới.

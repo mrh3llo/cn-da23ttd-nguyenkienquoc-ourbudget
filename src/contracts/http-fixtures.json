@@ -1,0 +1,8 @@
+[
+  {"status":201,"body":{"data":{"id":"1","category":"Lương","wallet_id":"1","amount":"9223372036854775807","occurred_at":"2026-11-30T18:00:00Z"},"meta":{"request_id":"0123456789abcdef0123456789abcdef"}}},
+  {"status":401,"body":{"error":{"code":"unauthenticated","message":"Phiên không hợp lệ.","fields":{}},"meta":{"request_id":"0123456789abcdef0123456789abcdef"}}},
+  {"status":404,"body":{"error":{"code":"not_found","message":"Không tìm thấy tài nguyên.","fields":{}},"meta":{"request_id":"0123456789abcdef0123456789abcdef"}}},
+  {"status":409,"body":{"error":{"code":"conflict","message":"Khóa đã dùng cho nội dung khác.","fields":{}},"meta":{"request_id":"0123456789abcdef0123456789abcdef"}}},
+  {"status":422,"body":{"error":{"code":"validation_failed","message":"Dữ liệu không hợp lệ.","fields":{"amount":["Số tiền phải là chuỗi số nguyên."]}},"meta":{"request_id":"0123456789abcdef0123456789abcdef"}}},
+  {"status":500,"body":{"error":{"code":"internal_error","message":"Không thể xử lý yêu cầu.","fields":{}},"meta":{"request_id":"0123456789abcdef0123456789abcdef"}}}
+]
