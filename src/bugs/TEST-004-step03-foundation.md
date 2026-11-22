@@ -1,5 +1,8 @@
 # TEST-004 — Nền PHP/MySQL, HTTP và Android, bước 03
 
+> Báo cáo lịch sử của schema cũ. Kết quả hiện hành và quyết định chỉ giữ 7 thực thể nằm trong [TEST-005](TEST-005-step04-report-entities.md); không dùng lệnh cài/migration cũ trong tài liệu này cho bản hiện tại.
+
+
 **Ngày kiểm thử:** 20–21/11/2026 (Asia/Ho_Chi_Minh). **Kết luận:** mã nền PHP/MySQL, migration, outbox và kết nối Android đạt các ca dưới đây. **Chưa chốt nghiệm thu toàn bộ bước 03:** ERD/PDM native chưa đồng bộ và mở kiểm tra trong PowerDesigner. Đây không phải báo cáo hoàn thành đăng nhập Google hay nghiệp vụ thu/chi thật.
 
 ## Phạm vi và môi trường

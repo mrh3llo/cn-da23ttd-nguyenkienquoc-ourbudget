@@ -10,9 +10,11 @@ class MainNavigationShell extends StatefulWidget {
     super.key,
     required this.pages,
     required this.home,
+    this.transactionsEnabled = true,
   });
 
   final List<Widget> pages;
+  final bool transactionsEnabled;
   final Widget Function(VoidCallback showHistory, VoidCallback showBudget) home;
 
   @override
@@ -82,14 +84,16 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           ...widget.pages,
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Ghi giao dịch',
-        backgroundColor: primary,
-        foregroundColor: Colors.white,
-        shape: const CircleBorder(),
-        onPressed: _openTransaction,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: widget.transactionsEnabled
+          ? FloatingActionButton(
+              tooltip: 'Ghi giao dịch',
+              backgroundColor: primary,
+              foregroundColor: Colors.white,
+              shape: const CircleBorder(),
+              onPressed: _openTransaction,
+              child: const Icon(Icons.add),
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         color: Colors.white,

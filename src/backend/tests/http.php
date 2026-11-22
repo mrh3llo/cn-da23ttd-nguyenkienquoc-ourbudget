@@ -20,7 +20,7 @@ foreach ([['GET','/api/v1/health',200], ['GET','/api/v1/unknown',404], ['POST','
     verify((bool) preg_match('/^[a-f0-9]{32}$/D', $json['meta']['request_id']), 'Server request ID');
     verify(in_array('Cache-Control: no-store', $http_response_header, true), 'No-store response');
     if ($status === 200) {
-        verify($json['data']['database'] === 'ok', 'HTTP reaches MySQL');
+        verify($json['data']['database'] === 'ok', 'HTTP reaches PostgreSQL');
     } else {
         verify(isset($json['error']['code']), 'Error envelope');
     }
@@ -45,6 +45,6 @@ if ($unavailable) {
     $body = file_get_contents($unavailable . '/api/v1/health', false, stream_context_create(['http'=>['ignore_errors'=>true,'timeout'=>10]]));
     $json = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
     verify(str_contains($http_response_header[0], ' 503 '), 'Unavailable database returns 503');
-    verify($json['error']['code'] === 'service_unavailable' && !str_contains($body, 'SQLSTATE') && !str_contains($body, 'mysql:'), 'Dependency errors do not leak database details');
+    verify($json['error']['code'] === 'service_unavailable' && !str_contains($body, 'SQLSTATE') && !str_contains($body, 'pgsql:'), 'Dependency errors do not leak database details');
     echo "HTTP ALL RESULT: $passed/$passed passed\n";
 }

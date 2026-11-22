@@ -1,0 +1,77 @@
+{
+  "source": "thesis/doc/2. Báo cáo đề tài.docx",
+  "sha256": "d22fc86d68c60a580bd974b28ce9122d97bd19852bffd266ce87e5583526c2af",
+  "tables": {
+    "users": {
+      "users_id": "int",
+      "users_name": "varchar(50)",
+      "users_password": "text",
+      "users_email": "varchar(150)",
+      "users_phoneNumber": "varchar(10)",
+      "users_avatar_url": "text",
+      "users_is_active": "smallint",
+      "users_created_at": "datetime",
+      "users_updated_at": "datetime",
+      "users_verified_at": "datetime",
+      "user_google_sub": "varchar(255)",
+      "users_sessions_hash": "binary(32)",
+      "users_sessions_expires_at": "datetime",
+      "users_verification_hash": "binary(32)",
+      "users_verification_experes_at": "datetime",
+      "users_reset_hash": "binary(32)",
+      "users_reset_expires_at": "datetime",
+      "users_welcomed_at": "datetime"
+    },
+    "wallet_categories": {
+      "walletcates_id": "bigint",
+      "walletcates_name": "varchar(150)",
+      "walletcates_icon": "varchar(150)"
+    },
+    "wallets": {
+      "wallets_id": "int",
+      "walletcates_id": "bigint",
+      "users_id": "int",
+      "wallets_name": "varchar(100)",
+      "wallets_current_balance": "bigint",
+      "wallets_opening_balance": "bigint",
+      "wallets_priority": "smallint",
+      "wallets_created_at": "datetime",
+      "wallets_is_active": "smallint",
+      "wallets_active_priority": "smallint"
+    },
+    "outcome_categories": {
+      "outcome_id": "bigint",
+      "outcome_name": "varchar(150)",
+      "outcome_icon": "varchar(150)"
+    },
+    "income_categories": {
+      "income_id": "bigint",
+      "income_name": "varchar(150)",
+      "income_icon": "varchar(150)"
+    },
+    "transactions": {
+      "transactions_id": "int",
+      "income_id": "bigint",
+      "wallets_id": "int",
+      "users_id": "int",
+      "outcome_id": "bigint",
+      "transactions_amount": "bigint",
+      "transactions_note": "text",
+      "transactions_created_time": "datetime",
+      "transactions_occured_at": "datetime",
+      "transactions_updated_at": "datetime",
+      "destination_wallet_id": "int"
+    },
+    "budgets": {
+      "budgets_id": "int",
+      "users_id": "int",
+      "outcome_id": "bigint",
+      "income_id": "bigint",
+      "budgets_amount_limit": "decimal(19,0)",
+      "budgets_period": "varchar(5)",
+      "budgets_start": "date",
+      "budgets_end": "date",
+      "budgets_created_at": "datetime"
+    }
+  }
+}

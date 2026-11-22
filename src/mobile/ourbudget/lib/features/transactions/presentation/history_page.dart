@@ -21,7 +21,11 @@ class _HistoryPageState extends State<HistoryPage> {
     content: (ledger) {
       final byDay = <String, List<Widget>>{};
       for (final entry in ledger.entries) {
-        if (_wallet != null && _wallet != entry.walletId) continue;
+        if (_wallet != null &&
+            _wallet != entry.walletId &&
+            _wallet != entry.destinationWalletId) {
+          continue;
+        }
         (byDay[displayDate(entry.occurredAt)] ??= []).addAll([
           TransactionTile(
             entry: entry,

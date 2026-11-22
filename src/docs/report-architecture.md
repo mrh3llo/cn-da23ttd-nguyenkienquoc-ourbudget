@@ -1,4 +1,8 @@
 # 3.5. Xây dựng hệ thống Backend và RESTful API
+Ghi chú cập nhật triển khai: phần CSDL hiện sử dụng Supabase PostgreSQL qua PDO ở backend PHP. Khi cập nhật nội dung luận văn, đồng bộ các đoạn mô tả MySQL với [ghi chú chuyển đổi](supabase-migration.md).
+
+> Chốt ngày 21/11/2026: không thêm thực thể ngoài Word. [Đối chiếu bước 03–04](report-alignment-step03-step04.md) thay thế các đề xuất cũ về bảng kỹ thuật; chỉ bổ sung thuộc tính, dùng queue tệp và một phiên trên mỗi tài khoản.
+
 
 *Bản thảo mô tả kiến trúc thiết kế. Bước 03 đã hiện thực nền SQL/PHP và worker email; luồng Google, icon và thông báo theo nghiệp vụ chưa được nghiệm thu hoàn chỉnh. Không sử dụng mô tả thiết kế này thay cho [báo cáo kiểm thử](../bugs/TEST-004-step03-foundation.md). [Đặc tả chi tiết](proposal-google-email-icons.md).*
 

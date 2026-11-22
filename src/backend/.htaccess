@@ -1,0 +1,3 @@
+# Defense in depth if the backend directory is uploaded below htdocs.
+# Only public/ is a web root; requests to source/config/runtime must never run.
+Require all denied

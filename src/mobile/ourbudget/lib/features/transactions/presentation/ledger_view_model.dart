@@ -29,6 +29,7 @@ class LedgerViewModel extends ChangeNotifier {
   }
 
   Future<bool> save({
+    String? destinationWalletId,
     required String category,
     required String walletId,
     required BigInt amount,
@@ -40,6 +41,7 @@ class LedgerViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       ledger = await _repository.create(
+        destinationWalletId: destinationWalletId,
         category: category,
         walletId: walletId,
         amount: amount,

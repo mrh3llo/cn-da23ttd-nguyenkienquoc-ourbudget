@@ -60,3 +60,22 @@ Bản hiện tại dùng dữ liệu mẫu trong bộ nhớ và có thể dùng 
 | Có cả máy ảo và điện thoại | Chọn điện thoại trong Android Studio hoặc truyền đúng ID cho `flutter run -d` hay `adb -s`. |
 | Không nhận lệnh `flutter` | Dùng đường dẫn đến `flutter.bat` trong SDK trên máy hoặc thêm thư mục `bin` của SDK vào PATH. Bản SDK dùng lúc kiểm thử nằm trong `graphify-out\.ourbudget-sdk\flutter\bin\flutter.bat` tính từ thư mục gốc repo và là bộ cài cục bộ. [Thêm Flutter vào PATH](https://docs.flutter.dev/install/add-to-path) |
 | Android báo không cài được hoặc ADB báo `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | Kiểm tra phiên bản Android, dung lượng và APK đã chép đủ. Lỗi chữ ký xảy ra nếu máy đã có bản OurBudget ký bằng khóa khác. Hãy dùng APK ký cùng khóa để cập nhật. Nếu chọn gỡ bản cũ trước khi cài, dữ liệu của bản cũ trên máy sẽ bị xóa. |
+
+## API connection (step 04)
+
+The Flutter app calls the PHP API; the backend connects to Supabase PostgreSQL. Flutter contains no database credentials or Supabase secret key. Configure backend secrets in `src/backend/.env` on the server before starting the API.
+
+For an Android Emulator, point the app to the API running on the development computer:
+
+```powershell
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
+```
+
+For a USB-connected phone, forward the port and use localhost:
+
+```powershell
+adb reverse tcp:8080 tcp:8080
+flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8080
+```
+
+For a release APK, configure the API's HTTPS URL. Do not include `DB_PASSWORD` or `SUPABASE_SECRET_KEY` in Flutter build arguments or the app. Email verification requires the backend and mail worker; Google Sign-In requires OAuth clients configured for the matching signing certificate.

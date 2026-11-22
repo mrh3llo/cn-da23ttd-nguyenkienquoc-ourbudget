@@ -1,6 +1,6 @@
 # Hướng dẫn chuẩn bị Google Sign-In và email cho OurBudget
 
-**Cập nhật 21/11/2026:** bạn đã xác nhận hoàn tất OAuth Client và cung cấp Web client ID; ID đã được đưa vào `src/backend/config/example.php` dưới khóa `google_server_client_id`. Backend nền và worker đã có, nhưng endpoint xác minh Google ID token và đăng nhập trên Flutter thuộc bước 04, chưa nghiệm thu OAuth thực tế. Hướng dẫn này dành cho Android Flutter + PHP/MySQL, theo [đề xuất mở rộng](proposal-google-email-icons.md). Tên mục trong Console có thể thay đổi; đối chiếu các nguồn chính thức cuối mỗi phần.
+**Cập nhật 21/11/2026:** bạn đã xác nhận hoàn tất OAuth Client và cung cấp Web client ID; ID đã được đưa vào `src/backend/config/example.php` dưới khóa `google_server_client_id`. Backend nền và worker đã có, nhưng endpoint xác minh Google ID token và đăng nhập trên Flutter thuộc bước 04, chưa nghiệm thu OAuth thực tế. Hướng dẫn này dành cho Android Flutter + PHP/PostgreSQL, theo [đề xuất mở rộng](proposal-google-email-icons.md). Tên mục trong Console có thể thay đổi; đối chiếu các nguồn chính thức cuối mỗi phần.
 
 ## 1. Thông tin cần chuẩn bị
 
@@ -11,7 +11,7 @@
 | Google Cloud project | Một project phát triển riêng cho OurBudget, do bạn quản lý |
 | Email hỗ trợ và developer contact | Email bạn kiểm soát |
 | Tài khoản thử | Các tài khoản Google sẽ thử ứng dụng khi consent đang Testing |
-| Địa chỉ API | HTTPS của PHP để nhận ID token; không nhập IP MySQL vào OAuth |
+| Địa chỉ API | HTTPS của PHP để nhận ID token; không nhập địa chỉ máy chủ cơ sở dữ liệu vào OAuth |
 
 ## 2. Tạo project và cấu hình Google Auth Platform
 
@@ -87,7 +87,15 @@ Không cần bật Gmail API cho phương án SMTP + App Password. Đăng nhập
 - Token sai audience, hết hạn hoặc sửa nội dung bị từ chối; email trùng không tự chiếm tài khoản cũ.
 - Tài khoản Google mới nhận thư đăng ký; đăng nhập chủ động nhận thư thông báo; mở lại ứng dụng với phiên cũ không gửi thêm.
 - Email nhận thông báo tài chính đã xác minh; tạo/sửa/xóa khoản thu chi chỉ tạo sự kiện sau commit; rollback không có thư.
-- Retry cùng thao tác không tạo thêm outbox; khi SMTP tạm lỗi, giao dịch vẫn tồn tại và worker thử lại.
-- Kiểm tra Spam, địa chỉ From, cấu hình người gửi và trạng thái outbox. Giới hạn gửi và khả năng chuyển phát phụ thuộc tài khoản/nhà cung cấp; không hứa thư tới tức thì hoặc vô hạn.
+- Retry cùng thao tác không tạo thêm queue tệp; khi SMTP tạm lỗi, giao dịch vẫn tồn tại và worker thử lại.
+- Kiểm tra Spam, địa chỉ From, cấu hình người gửi và trạng thái queue tệp. Giới hạn gửi và khả năng chuyển phát phụ thuộc tài khoản/nhà cung cấp; không hứa thư tới tức thì hoặc vô hạn.
 
 Lỗi Google thường cần kiểm tra package/SHA-1, đúng Web client ID, project và tài khoản thử. Lỗi SMTP cần kiểm tra App Password, TLS/cổng và chính sách tài khoản. Đây là checklist tương lai, chưa phải kết quả kiểm thử đã đạt.
+
+## Cấu hình hiện hành trên máy
+
+Android package: com.ourbudget.ourbudget. Web client ID: 171608086306-eov7trctrio9s8jpof6g8bu2k8qemg4n.apps.googleusercontent.com. Android OAuth client phải khớp package và SHA-1 của chứng chỉ ký APK (release có thể khác debug). Không đặt client secret hoặc khóa service account trong Flutter.
+
+Người gửi và nhận thử được tác giả chọn là quocmrh3llo@gmail.com. Service account không có hộp thư Gmail cá nhân. Dùng smtp.gmail.com:587, TLS, username là Gmail và App Password trong backend/config/local.php. Không đưa mật khẩu vào chat/Git. Gmail đã chấp nhận thư kiểm tra trong phiên này; việc thư vào Inbox cần người nhận xác nhận.
+
+App dùng mã 64 ký tự trong email để xác minh/reset, không cần URL HTTPS công khai ở bước thử cục bộ. Chạy php src/backend/bin/mail-worker.php; cần Task Scheduler/cron để xử lý tự động lâu dài. Hash mã và danh tính Google nằm trong users, không có bảng bổ sung. [Backend](../backend/README.md) mô tả giới hạn queue.

@@ -1,6 +1,7 @@
 # Lộ trình triển khai OurBudget cho Android
+Current implementation (2026-11-22): the PHP API uses Supabase PostgreSQL. Older MySQL references describe the thesis or original design. See [migration notes](supabase-migration.md) and [deployment instructions](../../supabase/SUPABASE.md).
 
-**Cập nhật bước 03:** đã triển khai SQL nâng cấp, nền PHP, hợp đồng HTTP và worker email; xem [báo cáo kiểm thử](../bugs/TEST-004-step03-foundation.md). Google Sign-In và email theo sự kiện nghiệp vụ tiếp tục ở bước 04–07, icon ở bước 05. Đọc [đặc tả bổ sung](proposal-google-email-icons.md) và [setup Google/email](google-email-setup.md).
+**Cập nhật 22/11/2026:** chỉ dùng bảng và thuộc tính trong Word, trừ ngoại lệ đã duyệt tại [hướng dẫn Supabase](../../supabase/SUPABASE.md). Các migration PostgreSQL trong supabase/migrations là nguồn schema triển khai; chưa áp dụng CSDL cá nhân.
 
 Hiện trạng bắt đầu là cây thư mục `src/mobile/ourbudget/`. Mốc đầu tiên là chạy được ứng dụng Flutter trong Android Studio. Mốc chức năng đầu tiên là đăng nhập, tạo hoặc chọn ví, ghi một khoản thu/chi và thấy số dư cùng lịch sử cập nhật từ API. Sau đó mới hoàn thiện sửa/xóa, chuyển tiền, ngân sách và báo cáo. Kế hoạch bao gồm phần PHP/MySQL cần có để nghiệm thu ứng dụng với dữ liệu thật. [Cây thư mục Flutter](../mobile/ourbudget/README.md) · [Kiến trúc hệ thống](final-system-architecture.md) · [Kiến trúc Flutter](flutter-app-architecture.md) · [Use-case UC1–UC24](use-case-diagram.md) · [Luồng Figma](user-flow-our-budget.md)
 
@@ -39,11 +40,11 @@ Làm theo thứ tự trong bảng. Trong mỗi bước có tích hợp, xác đ�
 
 ## Bước 03. Chuẩn bị PHP/MySQL và hợp đồng dùng chung
 
-**Tiến độ triển khai:** đã có [SQL 001–004](../database/README.md), [API PHP và worker](../backend/README.md), [hợp đồng và fixtures HTTP](http-api-contract.md), kiểm thử migration/outbox và bài kiểm thử Android gọi API thật. [Báo cáo TEST-004](../bugs/TEST-004-step03-foundation.md) ghi kết quả thực tế. **Chưa chốt nghiệm thu toàn bộ bước 03:** tệp ERD/PDM native vẫn cần đồng bộ và mở kiểm tra trong PowerDesigner; [bản đối chiếu 14 bảng](../database/model-reference.md) đã được xuất trực tiếp từ MySQL. Báo cáo TEST-003 giữ nguyên như bằng chứng phiên bản 10 bảng cũ.
+**Cập nhật 22/11/2026:** backend dùng Supabase PostgreSQL qua API PHP. Schema bảy thực thể nằm trong các migration tại supabase/migrations; chưa chuyển dữ liệu từ MySQL. Xem [ghi chú chuyển đổi](supabase-migration.md) và [hướng dẫn triển khai](../../supabase/SUPABASE.md).
 
 
 1. Kiểm tra nơi đặt mã PHP, môi trường chạy, MySQL và cách cung cấp cấu hình phát triển. Kiểm tra đích PowerDesigner trước khi sinh SQL vì PDM hiện đặt SAP SQL Anywhere 17. Đối chiếu ERD và PDM với kiến trúc đích MySQL InnoDB, sau đó dùng migration hoặc DDL đã kiểm tra trên cơ sở dữ liệu phát triển. Cơ sở dữ liệu này cần dựng lại được từ schema và dữ liệu mẫu.
-2. Chuẩn bị bảng người dùng, phiên và khôi phục mật khẩu, ví, danh mục thu/chi, giao dịch, khóa chống ghi trùng và ngân sách. Đối chiếu khóa ngoại, trạng thái hoạt động, chỉ mục theo tài khoản và ngày phát sinh, cùng `BIGINT` cho tiền. Chuẩn bị hai tài khoản thử độc lập và danh mục hệ thống dùng chung.
+2. Chỉ tạo users, wallet_categories, wallets, income_categories, outcome_categories, transactions và budgets. Google, xác minh và khôi phục là thuộc tính users; hàng đợi email và bộ đếm giới hạn truy cập nằm ngoài CSDL. Kiểm tra khóa ngoại, kiểu dữ liệu tiền, thứ tự ví 0..N−1 và hai tài khoản thử độc lập.
 3. Chốt quy ước xác thực, cấu trúc lỗi có mã nghiệp vụ và lỗi theo trường, quy tắc phân trang và mẫu yêu cầu/phản hồi. Ghi rõ `401`, `404`, `409`, `422` và `500` để Flutter xử lý khác nhau. Chi tiết endpoint được chốt theo từng bước chức năng. Trong môi trường phát triển, kiểm tra đường kết nối từ Android Emulator hoặc thiết bị thật tới PHP và cấu hình HTTPS cho bản phát hành.
 
 **Nghiệm thu** Dựng được cơ sở dữ liệu thử từ đầu. Kiểm thử được PHP kết nối MySQL và thiết bị gọi được API thử nghiệm. Có mẫu phản hồi thành công và lỗi để làm fixture cho Flutter.
@@ -123,12 +124,16 @@ Thực hiện các mục dưới đây ngay trong bước tương ứng, trướ
 | Bước | Công việc bổ sung | Nghiệm thu bổ sung |
 | --- | --- | --- |
 | 02 | Chốt mã Material Icons, ánh xạ cục bộ, bộ chọn/fallback và quyền dùng logo | Offline, mã lạ, logo thiếu và nhãn trợ năng |
-| 03 | Đồng bộ ERD/PDM và migration: ưu tiên ASC, seed 0..N−1; `user_identities`, mật khẩu nullable, xác minh email, `email_outbox`; cấu hình worker/mail | Dựng mới và nâng cấp dữ liệu thử an toàn; rollback không để lại outbox |
+| 03 | Schema 7 thực thể; ưu tiên ASC; thuộc tính xác thực users và queue tệp | Cài mới và chuyển bản cũ có backup, bảo toàn dữ liệu |
 | 04 | OAuth Android/Web client; xác minh ID token, liên kết có xác minh, phiên nội bộ; email đăng ký/đăng nhập và xác minh địa chỉ | Token sai/hết hạn, email trùng, Google-only, debug/release SHA-1; khôi phục phiên không gửi mail |
 | 05 | Thứ tự ví 0..N−1 và đổi mặc định trong giao tác; danh mục icon theo allowlist | Ví 0 được chọn, cập nhật đồng thời không tạo nhiều mặc định; đọc được icon cũ |
-| 06 | Outbox tạo thu/chi cùng giao tác/idempotency; gửi sau commit | Replay không thêm outbox, SMTP lỗi vẫn giữ giao dịch |
+| 06 | Thu/chi/chuyển ví theo dấu và ví đích; queue sau commit | Không thêm thuộc tính nếu chưa được duyệt; chuyển ví không tính vào thu/chi |
 | 07 | Email sửa/xóa thu chi, snapshot trước xóa; sự kiện phân biệt từng lần sửa | Rollback không gửi thư, hai lần sửa thật có hai sự kiện |
 | 08–09 | Giữ nguồn tổng hợp ngân sách/báo cáo từ giao dịch đã commit | Gửi mail không làm thay đổi số liệu |
 | 10 | Kiểm tra email xác minh, timeout sau gửi, worker dừng và hết lượt retry; Google với chứng chỉ release | Báo cáo riêng kết quả nghiệp vụ và chuyển phát; ghi giới hạn trùng thư của SMTP |
 
 Dùng mailbox thử có kiểm soát khi nghiệm thu email. Đăng ký tự cấp phiên chỉ phát sự kiện đăng ký; với email chưa xác minh, gửi thư xác minh và chỉ phát thông báo chứa dữ liệu tài khoản/tài chính sau xác minh. Bộ kiểm thử mới chạy qua SQL 001–004; 34 kiểm tra cũ chỉ là nhóm kiểm tra baseline trong bộ mới.
+
+## Ràng buộc dữ liệu hiện hành
+
+Không có transactions_type: xét ví đích trước dấu tiền; chuyển ví không tính vào thu/chi hoặc ngân sách. Các đề xuất khóa chống lặp, xóa mềm hoặc thuộc tính ngoài Word phải được duyệt riêng. Queue ghi sau commit, không nguyên tử với CSDL. Xem [chuẩn hóa](../../supabase/SUPABASE.md).

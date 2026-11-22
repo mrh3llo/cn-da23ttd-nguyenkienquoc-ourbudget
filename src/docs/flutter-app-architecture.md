@@ -1,5 +1,8 @@
 # Kiến trúc và hướng dẫn triển khai ứng dụng Flutter OurBudget
 
+> Chốt ngày 21/11/2026: không thêm thực thể ngoài Word. [Đối chiếu bước 03–04](report-alignment-step03-step04.md) thay thế các đề xuất cũ về bảng kỹ thuật; chỉ bổ sung thuộc tính, dùng queue tệp và một phiên trên mỗi tài khoản.
+
+
 Đề xuất triển khai một ứng dụng Flutter/Dart dành cho Android, mở và chạy từ Android Studio. Tổ chức giao diện theo tính năng, dùng Provider với ChangeNotifier để quản lý trạng thái và gọi RESTful API PHP qua HTTPS/JSON. API xác nhận các thay đổi tài chính và cung cấp số liệu dùng cho ví, ngân sách và báo cáo. Phạm vi nghiệp vụ là UC1–UC24. Phiên bản đầu ghi chép nguồn tiền thủ công, còn ảnh hóa đơn thuộc hướng phát triển sau. [Kiến trúc hệ thống đã chốt](final-system-architecture.md) · [Đặc tả use-case](use-case-diagram.md)
 
 ## 1. Dự án trong Android Studio

@@ -1,92 +1,110 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import '../core/config/api_config.dart';
+import '../core/network/api_client.dart';
 import '../design_system/app_theme.dart';
-import '../features/budgets/presentation/budgets_page.dart';
-import '../features/home/presentation/home_page.dart';
+import '../features/auth/data/auth_repository.dart';
+import '../features/auth/presentation/auth_controller.dart';
+import '../features/auth/presentation/auth_page.dart';
+import '../features/profile/presentation/profile_page.dart';
 import '../features/transactions/data/transaction_repository.dart';
-import '../features/transactions/presentation/history_page.dart';
-import '../features/transactions/presentation/ledger_view_model.dart';
 import '../widgets/main_navigation_shell.dart';
+import 'demo_app.dart';
 
 class OurBudgetApp extends StatelessWidget {
   const OurBudgetApp({
     super.key,
+    this.demo = false,
     this.createRepository = FakeTransactionRepository.new,
+    this.authController,
   });
-
+  final bool demo;
   final TransactionRepository Function() createRepository;
-
-  @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'OurBudget',
-    debugShowCheckedModeBanner: false,
-    theme: appTheme,
-    locale: const Locale('vi'),
-    supportedLocales: const [Locale('vi')],
-    localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    home: ChangeNotifierProvider(
-      create: (_) => _DemoSession(),
-      child: _SessionGate(createRepository: createRepository),
-    ),
-  );
-}
-
-class _DemoSession extends ChangeNotifier {
-  var active = true;
-
-  void setActive(bool value) {
-    active = value;
-    notifyListeners();
-  }
-}
-
-class _SessionGate extends StatelessWidget {
-  const _SessionGate({required this.createRepository});
-
-  final TransactionRepository Function() createRepository;
+  final AuthController? authController;
 
   @override
   Widget build(BuildContext context) {
-    final active = context.select((_DemoSession session) => session.active);
-    if (!active) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('OurBudget')),
-        body: Center(
-          child: FilledButton(
-            onPressed: () => context.read<_DemoSession>().setActive(true),
-            child: const Text('Mở bản thử nghiệm'),
-          ),
-        ),
-      );
+    if (demo || const bool.fromEnvironment('DEMO_MODE')) {
+      return DemoOurBudgetApp(createRepository: createRepository);
     }
     return ChangeNotifierProvider(
-      create: (_) => LedgerViewModel(createRepository())..load(),
-      child: MainNavigationShell(
-        home: (history, budget) =>
-            HomePage(openHistory: history, openBudget: budget),
-        pages: const [HistoryPage(), BudgetsPage(), _ProfilePage()],
-      ),
+      create: (_) =>
+          (authController ??
+                AuthController(
+                  AuthRepository(ApiClient(const ApiConfig())),
+                  SecureTokenStore(),
+                  GoogleLogin(),
+                ))
+            ..restore(),
+      child: const _AuthenticatedApp(),
     );
   }
 }
 
-class _ProfilePage extends StatelessWidget {
-  const _ProfilePage();
-
+class _AuthenticatedApp extends StatelessWidget {
+  const _AuthenticatedApp();
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(spacing),
-    children: [
-      const ListTile(
-        title: Text('OurBudget'),
-        subtitle: Text('Quản lý chi tiêu cá nhân · Bản thử nghiệm'),
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthController>();
+    return MaterialApp(
+      key: ValueKey(auth.generation),
+      title: 'OurBudget',
+      debugShowCheckedModeBanner: false,
+      theme: appTheme,
+      locale: const Locale('vi'),
+      supportedLocales: const [Locale('vi')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      home: switch (auth.state) {
+        SessionState.restoring => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+        SessionState.signedOut => const AuthPage(),
+        SessionState.unavailable => Scaffold(
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    auth.error ??
+                        'Chưa kiểm tra được phiên. Hãy thử lại khi có mạng.',
+                  ),
+                  FilledButton(
+                    onPressed: auth.restore,
+                    child: const Text('Thử lại'),
+                  ),
+                  TextButton(
+                    onPressed: () => auth.logout(),
+                    child: const Text('Đăng xuất trên thiết bị'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SessionState.signedIn => MainNavigationShell(
+          key: ValueKey(auth.user!['id']),
+          transactionsEnabled: false,
+          home: (_, _) => const _ComingSoon(),
+          pages: const [_ComingSoon(), _ComingSoon(), ProfilePage()],
+        ),
+      },
+    );
+  }
+}
+
+class _ComingSoon extends StatelessWidget {
+  const _ComingSoon();
+  @override
+  Widget build(BuildContext context) => const Center(
+    child: Padding(
+      padding: EdgeInsets.all(24),
+      child: Text(
+        'Tài khoản của bạn đã sẵn sàng. Chức năng quản lý thu chi sẽ có trong bản cập nhật tiếp theo.',
+        textAlign: TextAlign.center,
       ),
-      ListTile(
-        leading: const Icon(Icons.logout),
-        title: const Text('Thoát phiên thử nghiệm'),
-        onTap: () => context.read<_DemoSession>().setActive(false),
-      ),
-    ],
+    ),
   );
 }

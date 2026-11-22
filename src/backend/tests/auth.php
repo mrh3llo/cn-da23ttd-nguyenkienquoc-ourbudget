@@ -1,0 +1,123 @@
+<?php
+declare(strict_types=1);
+
+use Firebase\JWT\JWT;
+require dirname(__DIR__) . '/src/bootstrap.php';
+$settings = config();
+if (!preg_match('/^[a-zA-Z0-9_]+_test$/D',$settings['db_name'])) throw new RuntimeException('Use disposable _test database');
+$pdo=database($settings);
+if ((int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('users','wallet_categories','wallets','income_categories','outcome_categories','transactions','budgets')")->fetchColumn() !== 0) throw new RuntimeException('Use database without OurBudget tables');
+foreach (glob(dirname(__DIR__,3).'/supabase/migrations/*.sql') as $file) $pdo->exec(file_get_contents($file));
+$passed=0;
+function checkAuth(bool $value,string $name): void {
+    global $passed;
+    if (!$value) throw new RuntimeException('FAIL: '.$name);
+    $passed++; echo 'PASS: ',$name,PHP_EOL;
+}
+function rejectAuth(callable $operation,int $status,string $name): void {
+    try { $operation(); } catch (ApiError $e) { checkAuth($e->status===$status,$name); return; }
+    throw new RuntimeException('FAIL: '.$name.' was accepted');
+}
+function mailRows(): array {
+    return array_map(fn($f)=>json_decode(file_get_contents($f),true,flags:JSON_THROW_ON_ERROR),glob(MailQueue::directory().'/*.json'));
+}
+function latestCode(PDO $pdo,string $event,int $id): string {
+    $prefix=$event==='email.verify' ? 'users_verification' : 'users_reset';
+    $q=$pdo->prepare("SELECT encode({$prefix}_hash,'hex') FROM users WHERE users_id=?");$q->execute([$id]);$hash=$q->fetchColumn();
+    foreach (mailRows() as $row) if ($row['users_id']===$id && $row['event_type']===$event && hash('sha256',$row['payload']['verification_code'] ?? '')===$hash) return $row['payload']['verification_code'];
+    throw new RuntimeException('Missing test code');
+}
+$key=openssl_pkey_new(['private_key_bits'=>2048,'private_key_type'=>OPENSSL_KEYTYPE_RSA]);
+openssl_pkey_export($key,$private);
+$public=openssl_pkey_get_details($key)['key'];
+$google=new GoogleIdentity('test-client',['test-key'=>$public]);
+$auth=new AuthService($pdo,$google);
+$claims=['iss'=>'https://accounts.google.com','aud'=>'test-client','sub'=>'subject-a','email'=>'google.test@gmail.com','email_verified'=>true,'name'=>'Google Test','iat'=>time(),'exp'=>time()+3600];
+$jwt=fn(array $values)=>JWT::encode($values,$private,'RS256','test-key');
+checkAuth($google->verify($jwt($claims))['sub']==='subject-a','RSA signed Google claims accepted');
+foreach (['aud'=>'wrong','iss'=>'https://evil.test','exp'=>time()-1,'sub'=>'','email'=>'bad'] as $field=>$value) rejectAuth(fn()=>$google->verify($jwt(array_replace($claims,[$field=>$value]))),401,'Reject Google '.$field);
+rejectAuth(fn()=>$google->verify('not.a.token'),401,'Reject malformed Google token');
+$other=openssl_pkey_new(['private_key_bits'=>2048,'private_key_type'=>OPENSSL_KEYTYPE_RSA]);openssl_pkey_export($other,$otherPrivate);
+rejectAuth(fn()=>$google->verify(JWT::encode($claims,$otherPrivate,'RS256','test-key')),401,'Reject invalid Google signature');
+$a=$auth->register(['name'=>'Tài khoản A','email'=>'auth.a@ourbudget.test','password'=>'Password!123']);
+$b=$auth->register(['name'=>'Tài khoản B','email'=>'auth.b@ourbudget.test','password'=>'Password!123']);
+$id=(int)$a['user']['id'];
+checkAuth($a['user']['email_verified']===false && strlen($a['token'])===64,'Register returns internal session and unverified email');
+checkAuth($pdo->query('SELECT users_password FROM users WHERE users_id=1')->fetchColumn()!=='Password!123','Password is hashed');
+checkAuth(!str_contains(json_encode($a),'users_password'),'Response does not contain password hash');
+$stored=$pdo->query("SELECT encode(users_sessions_hash,'hex') FROM users ORDER BY users_id LIMIT 1")->fetchColumn();
+checkAuth($stored===hash('sha256',$a['token']),'Session stored only as hash');
+rejectAuth(fn()=>$auth->register(['name'=>'Duplicate','email'=>'AUTH.A@OURBUDGET.TEST','password'=>'Password!123']),409,'Duplicate email rejected');
+rejectAuth(fn()=>$auth->login(['email'=>'auth.a@ourbudget.test','password'=>'WrongPassword']),401,'Wrong password rejected');
+$ua=$auth->authenticate($a['token']);$ub=$auth->authenticate($b['token']);
+checkAuth($auth->profile($ua)['id']!==$auth->profile($ub)['id'],'Two sessions map to separate users');
+$code=latestCode($pdo,'email.verify',$id);
+rejectAuth(fn()=>$auth->verifyEmail($ub,['code'=>$code]),422,'Verification cannot cross accounts');
+rejectAuth(fn()=>$auth->verifyEmail($ua,['code'=>'bad-code']),422,'Wrong verification code rejected');
+checkAuth($auth->verifyEmail($ua,['code'=>$code])['user']['email_verified']===true,'Email verification succeeds');
+rejectAuth(fn()=>$auth->verifyEmail($ua,['code'=>$code]),422,'Verification is single-use');
+$before=count(mailRows());
+$auth->authenticate($a['token']);
+checkAuth(count(mailRows())===$before,'Session restore does not enqueue email');
+$login=$auth->login(['email'=>'auth.a@ourbudget.test','password'=>'Password!123']);
+checkAuth(count(array_filter(mailRows(),fn($r)=>$r['event_type']==='auth.login'))===1,'Explicit login queues one email');
+rejectAuth(fn()=>$auth->authenticate($a['token']),401,'New login replaces previous session');
+$auth->logout($auth->authenticate($login['token']));
+rejectAuth(fn()=>$auth->authenticate($login['token']),401,'Logout revokes session');
+$a=$auth->login(['email'=>'auth.a@ourbudget.test','password'=>'Password!123']);
+$ua=$auth->authenticate($a['token']);
+$changed=$auth->updateProfile($ua,['name'=>'Tên mới','email'=>'changed@ourbudget.test','phone'=>'0123456789','avatar_url'=>'https://example.com/avatar.png','current_password'=>'Password!123']);
+checkAuth($changed['user']['name']==='Tên mới' && !$changed['user']['email_verified'],'Profile email change clears verification');
+rejectAuth(fn()=>$auth->updateProfile($ua,['name'=>'Bad','email'=>'auth.b@ourbudget.test','current_password'=>'Password!123']),409,'Duplicate profile email rejected atomically');
+checkAuth($auth->profile($auth->authenticate($a['token']))['email']==='changed@ourbudget.test','Failed profile update preserves saved values');
+rejectAuth(fn()=>$auth->updateProfile($ua,['name'=>'Bad','email'=>'another@ourbudget.test','current_password'=>'WrongPassword']),401,'Email change needs reauthentication');
+$auth->forgotPassword(['email'=>'changed@ourbudget.test']);
+$reset=latestCode($pdo,'auth.password_reset',$id);
+checkAuth($auth->forgotPassword(['email'=>'absent@ourbudget.test'])===['accepted'=>true],'Forgot password conceals unknown email');
+rejectAuth(fn()=>$auth->resetPassword(['email'=>'auth.b@ourbudget.test','code'=>$reset,'password'=>'NewPassword!123']),422,'Reset cannot cross accounts');
+checkAuth($auth->resetPassword(['email'=>'changed@ourbudget.test','code'=>$reset,'password'=>'NewPassword!123'])['reset'],'Password reset succeeds');
+rejectAuth(fn()=>$auth->authenticate($a['token']),401,'Reset revokes all prior sessions');
+rejectAuth(fn()=>$auth->resetPassword(['email'=>'changed@ourbudget.test','code'=>$reset,'password'=>'NewPassword!123']),422,'Reset is single-use');
+rejectAuth(fn()=>$auth->login(['email'=>'changed@ourbudget.test','password'=>'Password!123']),401,'Old password no longer accepted');
+checkAuth(isset($auth->login(['email'=>'changed@ourbudget.test','password'=>'NewPassword!123'])['token']),'New password accepted');
+$g=$auth->google(['id_token'=>$jwt($claims)]);
+checkAuth(!$g['user']['has_password'] && $g['user']['email_verified'] && $g['user']['google_linked'],'Google signup creates verified Gmail identity without password');
+rejectAuth(fn()=>$auth->login(['email'=>'google.test@gmail.com','password'=>'Password!123']),401,'Google-only account rejects password login');
+$count=(int)$pdo->query('SELECT COUNT(*) FROM users WHERE users_reset_hash IS NOT NULL')->fetchColumn();
+$auth->forgotPassword(['email'=>'google.test@gmail.com']);
+checkAuth((int)$pdo->query('SELECT COUNT(*) FROM users WHERE users_reset_hash IS NOT NULL')->fetchColumn()===$count,'Google-only account has no local reset token');
+$g2=$auth->google(['id_token'=>$jwt(array_replace($claims,['email'=>'new.google@gmail.com']))]);
+checkAuth($g2['user']['id']===$g['user']['id'] && $g2['user']['email']==='google.test@gmail.com','Google identity is anchored to sub, not new email');
+$collision=array_replace($claims,['sub'=>'subject-b','email'=>'auth.b@ourbudget.test']);
+rejectAuth(fn()=>$auth->google(['id_token'=>$jwt($collision)]),409,'Email match never auto-links Google');
+rejectAuth(fn()=>$auth->google(['id_token'=>$jwt($collision),'password'=>'WrongPassword'],$ub),401,'Link Google needs current password');
+checkAuth($auth->google(['id_token'=>$jwt($collision),'password'=>'Password!123'],$ub)['user']['google_linked'],'Explicit authenticated Google link succeeds');
+checkAuth($auth->google(['id_token'=>$jwt($collision)])['user']['id']===$b['user']['id'],'Linked Google login returns existing user');
+$third=$auth->google(['id_token'=>$jwt(array_replace($claims,['sub'=>'subject-c','email'=>'third@example.com']))]);
+checkAuth(!$third['user']['email_verified'],'Third-party Google email requires separate verification');
+$pdo->exec("UPDATE users SET users_sessions_expires_at=CURRENT_TIMESTAMP - INTERVAL '1 hour' WHERE users_id=2");
+rejectAuth(fn()=>$auth->authenticate($b['token']),401,'Expired session rejected');
+$auth->rateLimit('fixture-rate',1);
+rejectAuth(fn()=>$auth->rateLimit('fixture-rate',1),429,'Rate limit blocks repeated attempts');
+file_put_contents(config()['runtime_directory'].'/limits/'.hash('sha256','fixture-rate').'.json',json_encode(['attempts'=>1,'expires_at'=>time()-1]));
+$auth->rateLimit('fixture-rate',1);
+checkAuth(true,'Rate limit resets after expiry');
+$pending=$auth->register(['name'=>'Expiry','email'=>'expiry@ourbudget.test','password'=>'Password!123']);
+$pendingUser=$auth->authenticate($pending['token']);$pendingId=(int)$pending['user']['id'];
+$oldCode=latestCode($pdo,'email.verify',$pendingId);
+$auth->resend($pendingUser);
+rejectAuth(fn()=>$auth->verifyEmail($pendingUser,['code'=>$oldCode]),422,'Resend invalidates previous verification code');
+$newCode=latestCode($pdo,'email.verify',$pendingId);
+$pdo->exec("UPDATE users SET users_verification_experes_at=CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE users_id=$pendingId");
+rejectAuth(fn()=>$auth->verifyEmail($pendingUser,['code'=>$newCode]),422,'Expired verification code rejected');
+$auth->forgotPassword(['email'=>'expiry@ourbudget.test']);$oldReset=latestCode($pdo,'auth.password_reset',$pendingId);
+$auth->forgotPassword(['email'=>'expiry@ourbudget.test']);
+rejectAuth(fn()=>$auth->resetPassword(['email'=>'expiry@ourbudget.test','code'=>$oldReset,'password'=>'NewPassword!123']),422,'New reset request invalidates prior code');
+$newReset=latestCode($pdo,'auth.password_reset',$pendingId);
+$pdo->exec("UPDATE users SET users_reset_expires_at=CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE users_id=$pendingId");
+rejectAuth(fn()=>$auth->resetPassword(['email'=>'expiry@ourbudget.test','code'=>$newReset,'password'=>'NewPassword!123']),422,'Expired reset code rejected');
+$replacement=$auth->login(['email'=>'expiry@ourbudget.test','password'=>'Password!123']);
+$auth->logout($pendingUser);
+checkAuth($auth->authenticate($replacement['token'])['users_id']===$pendingUser['users_id'],'Delayed logout does not revoke replacement session');
+checkAuth((int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('users','wallet_categories','wallets','income_categories','outcome_categories','transactions','budgets')")->fetchColumn()===7,'Exactly seven report tables');
+echo "AUTH RESULT: $passed/$passed passed\n";

@@ -12,7 +12,7 @@ try {
     // One bounded batch per invocation; schedule every minute with Task Scheduler/cron.
     $limit = in_array('--once', $argv, true) ? 1 : 50;
     $processed = 0;
-    while ($processed < $limit && Outbox::workOne($pdo, fn(array $row) => deliverMail($row, $settings))) {
+    while ($processed < $limit && MailQueue::workOne($pdo, fn(array $row) => deliverMail($row, $settings))) {
         $processed++;
     }
     echo "Processed: $processed\n";

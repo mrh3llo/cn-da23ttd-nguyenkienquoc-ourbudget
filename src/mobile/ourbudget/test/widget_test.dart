@@ -7,7 +7,7 @@ void main() {
   testWidgets('giữ bộ lọc và lưu giao dịch từ tab Lịch sử', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(const OurBudgetApp());
+    await tester.pumpWidget(const OurBudgetApp(demo: true));
     await tester.pumpAndSettle();
     expect(find.text('5.420.000 đ'), findsOneWidget);
 
@@ -62,7 +62,9 @@ void main() {
   });
 
   testWidgets('tải lại sau lỗi và phân biệt dữ liệu rỗng', (tester) async {
-    await tester.pumpWidget(OurBudgetApp(createRepository: _FailThenEmpty.new));
+    await tester.pumpWidget(
+      OurBudgetApp(demo: true, createRepository: _FailThenEmpty.new),
+    );
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     await tester.pumpAndSettle();
     expect(find.text('Không thể tải dữ liệu. Hãy thử lại.'), findsOneWidget);
@@ -74,7 +76,9 @@ void main() {
   testWidgets('giữ bản nháp khoản thu sau lỗi lưu và cho thử lại', (
     tester,
   ) async {
-    await tester.pumpWidget(OurBudgetApp(createRepository: _FailFirstSave.new));
+    await tester.pumpWidget(
+      OurBudgetApp(demo: true, createRepository: _FailFirstSave.new),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Ghi giao dịch'));
     await tester.pumpAndSettle();
@@ -115,6 +119,7 @@ void main() {
     var created = 0;
     await tester.pumpWidget(
       OurBudgetApp(
+        demo: true,
         createRepository: () {
           created++;
           return FakeTransactionRepository();
@@ -141,7 +146,7 @@ void main() {
     tester.platformDispatcher.textScaleFactorTestValue = 1.6;
     addTearDown(tester.view.reset);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await tester.pumpWidget(const OurBudgetApp());
+    await tester.pumpWidget(const OurBudgetApp(demo: true));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Ghi giao dịch'));
     await tester.pumpAndSettle();
@@ -163,6 +168,7 @@ class _FailFirstSave extends FakeTransactionRepository {
 
   @override
   Future<Ledger> create({
+    String? destinationWalletId,
     required String category,
     required String walletId,
     required BigInt amount,
@@ -171,6 +177,7 @@ class _FailFirstSave extends FakeTransactionRepository {
   }) async {
     if (_attempts++ == 0) throw const FormatException();
     return super.create(
+      destinationWalletId: destinationWalletId,
       category: category,
       walletId: walletId,
       amount: amount,

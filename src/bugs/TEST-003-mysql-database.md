@@ -1,5 +1,8 @@
 # Kiểm thử phần CSDL của bước 03
 
+> Báo cáo lịch sử của schema cũ. Kết quả hiện hành và quyết định chỉ giữ 7 thực thể nằm trong [TEST-005](TEST-005-step04-report-entities.md); không dùng lệnh cài/migration cũ trong tài liệu này cho bản hiện tại.
+
+
 Ngày thực hiện **20/11/2026**. Trạng thái **hoàn thành phần SQL và hướng dẫn cài đặt**, chưa nghiệm thu toàn bộ bước 03 PHP/MySQL và HTTP. Phạm vi theo yêu cầu trước mắt của người dùng. [Bộ SQL và hướng dẫn](../database/README.md) · [Kiến trúc chốt](../docs/final-system-architecture.md) · [Roadmap](../docs/implementation-roadmap.md).
 
 ## Môi trường và cách chạy

@@ -5,13 +5,13 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-function deliverMail(array $row, array $settings): void
+function deliverMail(array $row, array $settings, ?string $diagnosticSubject = null): void
 {
     $mail = new PHPMailer(true);
     $mail->CharSet = 'UTF-8';
     $mail->setFrom($settings['mail_from'], 'OurBudget');
     $mail->addAddress($row['recipient']);
-    $mail->Subject = Outbox::SUBJECTS[$row['event_type']];
+    $mail->Subject = $diagnosticSubject ?? MailQueue::SUBJECTS[$row['event_type']];
     $mail->MessageID = '<' . hash('sha256', $row['event_id']) . '@' . substr(strrchr($settings['mail_from'], '@'), 1) . '>';
     $payload = json_decode($row['payload'], true, flags: JSON_THROW_ON_ERROR);
     $mail->Body = $mail->Subject . ".\n";
@@ -21,7 +21,12 @@ function deliverMail(array $row, array $settings): void
             $mail->Body .= $key . ': ' . $payload[$key] . "\n";
         }
     }
-    if ($row['event_type'] === 'email.verify') {
+    if (in_array($row['event_type'], ['email.verify', 'auth.password_reset'], true) && isset($payload['verification_code'])) {
+        if (!is_string($payload['verification_code']) || !preg_match('/^[a-f0-9]{64}$/D', $payload['verification_code'])) {
+            throw new InvalidArgumentException('Invalid email code');
+        }
+        $mail->Body .= "Sao chép mã dưới đây vào ứng dụng OurBudget:\n\n" . $payload['verification_code'] . "\n\nMã chỉ dùng một lần. Nếu không yêu cầu, hãy bỏ qua thư này.\n";
+    } elseif ($row['event_type'] === 'email.verify') {
         $url = $payload['verification_url'] ?? '';
         if (!is_string($url) || !filter_var($url, FILTER_VALIDATE_URL) || parse_url($url, PHP_URL_SCHEME) !== 'https') {
             throw new InvalidArgumentException('Verification requires an HTTPS URL');
@@ -48,7 +53,8 @@ function deliverMail(array $row, array $settings): void
     $mail->Port = (int) $settings['smtp_port'];
     $mail->SMTPAuth = true;
     $mail->Username = $settings['smtp_username'];
-    $mail->Password = $settings['smtp_password'];
+    $mail->Password = $settings['smtp_host'] === 'smtp.gmail.com'
+        ? preg_replace('/\s+/', '', $settings['smtp_password']) : $settings['smtp_password'];
     $mail->SMTPSecure = $settings['smtp_encryption'];
     $mail->Timeout = 10;
     $mail->Timelimit = 15;

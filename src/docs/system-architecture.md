@@ -1,4 +1,8 @@
 # Đề xuất kiến trúc hệ thống OurBudget
+Lưu ý trạng thái: đây là phương án kiến trúc ban đầu, nội dung MySQL đã được thay thế khi triển khai. Cấu hình thực tế hiện dùng Supabase PostgreSQL; xem [ghi chú chuyển đổi](supabase-migration.md).
+
+> Chốt ngày 21/11/2026: không thêm thực thể ngoài Word. [Đối chiếu bước 03–04](report-alignment-step03-step04.md) thay thế các đề xuất cũ về bảng kỹ thuật; chỉ bổ sung thuộc tính, dùng queue tệp và một phiên trên mỗi tài khoản.
+
 
 **Lưu ý phiên bản:** đây là bản đề xuất ban đầu. Dùng [kiến trúc chốt hiện hành](final-system-architecture.md) và [bổ sung ngày 20/11/2026](proposal-google-email-icons.md) khi triển khai. Quy ước mới là ví mặc định có thứ tự 0, tăng dần sau đó; Google Sign-In, icon cục bộ và email thông báo hiện ở mức đề xuất.
 

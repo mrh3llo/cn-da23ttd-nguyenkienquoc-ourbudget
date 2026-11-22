@@ -18,8 +18,8 @@ const SCREENS = [
   ["categories","Danh mục","",[["tabs","Chi tiêu","Thu nhập"],["card","Ăn uống","Chi tiêu","category-edit"],["card","Di chuyển","Chi tiêu"],["card","Mua sắm","Chi tiêu"],["card","Hóa đơn","Chi tiêu"],["button","Thêm danh mục","category-form"]]],
   ["category-form","Thêm danh mục","",[["tabs","Chi tiêu","Thu nhập"],["field","Tên danh mục","Ăn uống"],["field","Biểu tượng","Chọn biểu tượng"],["field","Màu sắc","Chọn màu"],["button","Lưu danh mục","categories"]]],
   ["report","Báo cáo thống kê","",[["filters","Tháng 11","Tất cả ví"],["card","Thu nhập","4.000.000 đ"],["card","Chi tiêu","1.740.000 đ"],["donut","Phân bổ chi tiêu","Ăn uống · Mua sắm · Khác"],["chart","Thu chi theo tuần","Tuần 1 · Tuần 2 · Tuần 3 · Tuần 4"]]],
-  ["login","Đăng nhập","",[["heading","Our Budget"],["field","Email","minhanh@example.com"],["field","Mật khẩu","••••••••"],["button","Đăng nhập","home"],["link","Quên mật khẩu?","reset"],["link","Tạo tài khoản","register"]]],
-  ["register","Đăng ký","",[["field","Họ và tên","Minh Anh"],["error","Email","minhanh@","Nhập email đúng định dạng."],["field","Số điện thoại","Nhập số điện thoại"],["field","Mật khẩu","Tạo mật khẩu"],["button","Tạo tài khoản","home"],["link","Đã có tài khoản? Đăng nhập","login"]]],
+  ["login","Đăng nhập","",[["field","Email","Nhập email"],["field","Mật khẩu","Nhập mật khẩu"],["button","Đăng nhập","home"],["link","Quên mật khẩu?","reset"]]],
+  ["register","Đăng ký","",[["field","Họ và tên","Nhập họ và tên"],["field","Email","Nhập email"],["field","Số điện thoại","Nhập số điện thoại"],["field","Mật khẩu","Tạo mật khẩu"],["button","Tạo tài khoản","home"]]],
   ["reset","Quên mật khẩu","",[["field","Email","minhanh@example.com"],["button","Gửi mã xác thực","otp"],["link","Quay lại đăng nhập","login"]]],
   ["otp","Đặt lại mật khẩu","",[["field","Mã xác thực","Nhập mã từ email"],["field","Mật khẩu mới","Nhập mật khẩu mới"],["button","Đặt lại mật khẩu","login"]]],
   ["wallet-edit","Chỉnh sửa nguồn tiền","",[["field","Tên nguồn tiền","Tiền mặt"],["field","Loại nguồn tiền","Tiền mặt"],["field","Số dư ban đầu","420.000 đ"],["button","Lưu thay đổi","wallets"],["link","Xóa nguồn tiền","wallet-delete"]]],
@@ -41,7 +41,15 @@ const W = 390;
 const H = 844;
 const contentWidth = 358;
 const detailed = figma.command !== 'wireframe';
-const pageName = detailed ? 'Giao diện chi tiết · Our Budget' : 'Wireframes · Our Budget · Bản sửa bố cục';
+const pageName = detailed ? 'Giao diện chi tiết · Our Budget · Xác thực' : 'Wireframes · Our Budget · Xác thực';
+// Official mark from developers.google.com/static/identity/images/g-logo.png, downsampled to 40 px.
+const googleMarkPng = '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';
+// Figma's plugin sandbox cannot read the standalone our-budget-wordmark.svg.
+const wordmarkSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="204" height="48" viewBox="0 0 204 48">
+  <circle cx="16.8" cy="21.6" r="12.4" fill="none" stroke="#1E6F5C" stroke-width="3.6"/>
+  <circle cx="16.8" cy="21.6" r="8" fill="none" stroke="#1E6F5C" stroke-width="1.3" opacity=".62"/>
+  <path fill="#0F172A" d="M85.6,23.02L85.6,29.66 88.68,29.66C89.99,29.66 91.02,29.36 91.77,28.75 92.51,28.14 92.88,27.31 92.88,26.25 92.88,25.25 92.52,24.45 91.78,23.88 91.05,23.31 90.03,23.02 88.72,23.02L85.6,23.02z M155.05,19.66C153.82,19.66 152.85,20.14 152.15,21.1 151.44,22.06 151.09,23.42 151.09,25.16 151.09,26.66 151.43,27.85 152.09,28.72 152.76,29.6 153.68,30.03 154.84,30.03 155.98,30.03 156.91,29.59 157.62,28.71 158.33,27.82 158.69,26.65 158.69,25.2L158.69,23.77C158.69,22.64 158.35,21.67 157.68,20.87 157,20.06 156.13,19.66 155.05,19.66z M132.73,19.66C131.5,19.66 130.54,20.14 129.85,21.11 129.15,22.08 128.81,23.41 128.81,25.09 128.81,26.67 129.14,27.89 129.81,28.75 130.48,29.6 131.4,30.03 132.59,30.03 133.71,30.03 134.63,29.58 135.34,28.68 136.05,27.78 136.4,26.58 136.4,25.09L136.4,23.74C136.4,22.57 136.06,21.59 135.38,20.82 134.7,20.05 133.82,19.66 132.73,19.66z M176.7,19.15C175.81,19.15 175.04,19.52 174.39,20.26 173.74,21 173.34,21.92 173.2,23.02L179.83,23.02C179.83,20.44,178.78,19.15,176.7,19.15z M102.18,15.85L107.71,15.85 107.71,26.22C107.71,28.76 108.72,30.03 110.74,30.03 111.73,30.03 112.53,29.68 113.13,28.99 113.73,28.29 114.02,27.34 114.02,26.15L114.02,15.85 119.56,15.85 119.56,33.85 114.02,33.85 114.02,31.1 113.94,31.1C112.57,33.23 110.73,34.29 108.43,34.29 104.26,34.29 102.18,31.76 102.18,26.71L102.18,15.85z M33.06,15.85L38.59,15.85 38.59,26.22C38.59,28.76 39.6,30.03 41.62,30.03 42.61,30.03 43.41,29.68 44.01,28.99 44.61,28.29 44.9,27.34 44.9,26.15L44.9,15.85 50.44,15.85 50.44,33.85 44.9,33.85 44.9,31.1 44.82,31.1C43.45,33.23 41.61,34.29 39.31,34.29 35.14,34.29 33.06,31.76 33.06,26.71L33.06,15.85z M65.49,15.53C66.07,15.53,66.53,15.6,66.86,15.74L66.86,20.86C66.19,20.49 65.41,20.31 64.52,20.31 63.32,20.31 62.37,20.75 61.69,21.64 61.01,22.52 60.67,23.73 60.67,25.25L60.67,33.85 55.12,33.85 55.12,15.85 60.67,15.85 60.67,19.19 60.74,19.19C61.62,16.75,63.2,15.53,65.49,15.53z M176.73,15.41C179.36,15.41 181.39,16.19 182.82,17.75 184.26,19.3 184.98,21.42 184.98,24.09L184.98,26.43 173.24,26.43C173.42,29.04 175.07,30.35 178.18,30.35 180.16,30.35 181.9,29.88 183.4,28.94L183.4,32.95C181.73,33.84 179.57,34.29 176.91,34.29 174,34.29 171.75,33.48 170.14,31.87 168.54,30.26 167.73,28.01 167.73,25.13 167.73,22.14 168.6,19.77 170.34,18.03 172.07,16.28 174.2,15.41 176.73,15.41z M153.62,15.41C155.81,15.41,157.46,16.25,158.55,17.94L158.62,17.94 158.62,15.85 164.17,15.85 164.17,31.79C164.17,35.13 163.2,37.72 161.27,39.55 159.34,41.38 156.54,42.3 152.87,42.3 150.44,42.3 148.52,41.96 147.1,41.26L147.1,36.59C148.95,37.67 150.82,38.21 152.71,38.21 154.58,38.21 156.04,37.71 157.07,36.72 158.1,35.73 158.62,34.39 158.62,32.69L158.62,31.26 158.55,31.26C157.28,33.28 155.41,34.29 152.94,34.29 150.64,34.29 148.82,33.48 147.47,31.86 146.12,30.24 145.45,28.08 145.45,25.36 145.45,22.31 146.2,19.89 147.7,18.1 149.2,16.3 151.17,15.41 153.62,15.41z M85.6,12.82L85.6,18.8 88.1,18.8C89.27,18.8 90.2,18.52 90.87,17.95 91.54,17.38 91.88,16.6 91.88,15.6 91.88,13.75 90.5,12.82 87.73,12.82L85.6,12.82z M195.12,10.38L195.12,15.85 199.16,15.85 199.16,19.94 195.12,19.94 195.12,27.22C195.12,29.09 195.86,30.03 197.35,30.03 197.94,30.03 198.54,29.86 199.16,29.52L199.16,33.64C198.34,34.07 197.11,34.29 195.45,34.29 191.54,34.29 189.58,32.25 189.58,28.19L189.58,19.94 186.66,19.94 186.66,15.85 189.58,15.85 189.58,11.96 195.12,10.38z M79.93,8.64L89.1,8.64C91.92,8.64 94.08,9.16 95.59,10.19 97.1,11.22 97.86,12.67 97.86,14.55 97.86,15.91 97.4,17.09 96.48,18.11 95.56,19.13 94.38,19.84 92.95,20.24L92.95,20.31C94.75,20.53 96.18,21.2 97.25,22.3 98.32,23.4 98.86,24.74 98.86,26.32 98.86,28.63 98.03,30.46 96.38,31.82 94.73,33.17 92.47,33.85 89.61,33.85L79.93,33.85 79.93,8.64z M136.3,7.2L141.85,7.2 141.85,33.85 136.3,33.85 136.3,31.37 136.23,31.37C134.96,33.31 133.1,34.29 130.65,34.29 128.4,34.29 126.59,33.49 125.22,31.9 123.85,30.32 123.17,28.1 123.17,25.25 123.17,22.27 123.92,19.89 125.43,18.1 126.94,16.3 128.93,15.41 131.37,15.41 133.69,15.41 135.31,16.24 136.23,17.9L136.3,17.9 136.3,7.2z"/>
+</svg>`;
 const navigation = { 'Trang chủ': '4:17', 'Lịch sử': '4:26', 'Ngân sách': '4:30', 'Cá nhân': '4:34' };
 const tabs = { 'Trang chủ': 'home', 'Lịch sử': 'history', 'Ngân sách': 'budgets', 'Cá nhân': 'profile' };
 const sheets = { quick: '4:149', income: '4:173', error: '4:197', optional: '4:249', 'quick-bank': '4:149', 'quick-ewallet': '4:149' };
@@ -53,10 +61,12 @@ const groups = [
   ['Đăng nhập và khôi phục', ['login', 'register', 'reset', 'otp']]
 ];
 const detailGroups = [
+  ['Đăng nhập và đăng ký', ['login', 'register']],
   ['Ghi chép hằng ngày', ['home', 'history', 'budgets', 'report']],
   ['Quản lý tài khoản', ['profile', 'wallets', 'categories']]
 ];
 const detailRows = {
+  login: SCREENS.find(screen => screen[0] === 'login')[3].filter(row => row[2] !== 'reset'),
   home: [
     ['balance', 'Tổng số dư khả dụng', '5.420.000 đ'],
     ['budget', 'Ngân sách tháng', '1.740.000 đ / 3.000.000 đ', '58% · An toàn', '58', 'budgets'],
@@ -80,7 +90,7 @@ const back = {
   'profile-edit': 'profile', wallets: 'profile', 'wallet-form': 'wallets', 'wallet-edit': 'wallets',
   transfer: 'wallets', categories: 'profile', 'categories-income': 'profile',
   'category-form': 'categories', 'category-form-income': 'categories-income', 'category-edit': 'categories', report: 'budgets',
-  register: 'login', reset: 'login', otp: 'reset'
+  reset: 'login', otp: 'reset'
 };
 const bankNames = { 'quick-bank': 'Ngân hàng', 'quick-ewallet': 'Ví điện tử' };
 const overlayReturn = { 'delete-tx': 'edit-tx', 'wallet-delete': 'wallet-edit', 'category-delete': 'category-edit', 'budget-delete': 'budget-edit', 'wallet-picker': 'quick', 'history-filter': 'history' };
@@ -302,21 +312,56 @@ async function build() {
       return n;
     };
     const place = (parent, n, x, y) => { parent.appendChild(n); n.x=x; n.y=y; return n; };
-    const header = (frame, title, dst) => {
-      const head = stack('Thanh tiêu đề', contentWidth, [
+    const header = (title, dst) =>
+      stack('Thanh tiêu đề', contentWidth, [
         ...(dst ? [click(t('‹', 'headingH1', 'primaryMain'), dst)] : []),
         t(title, 'headingH1')
       ], { horizontal:true, gap:12 });
-      return place(frame,head,16,24);
-    };
     const nav = (frame, active) => {
       const n = place(frame,use(navigation[active]),0,H-88);
       for (const child of n.children) click(child, tabs[child.name] || (child.name.includes('FloatingActionButton') ? 'quick' : null));
     };
+    const authTabs = current => stack('Chuyển chế độ tài khoản', contentWidth,
+      [['login', 'Đăng nhập'], ['register', 'Đăng ký']].map(([id, label]) => {
+        const selected = id === current;
+        const tab = stack(label, (contentWidth - 8) / 2, [t(label, 'bodyMedium', selected ? 'primaryMain' : 'textPrimary')],
+          { horizontal: true, padding: [12, 12] });
+        tab.primaryAxisAlignItems = 'CENTER';
+        const border = selected ? 'primaryMain' : 'border';
+        radius(outline(solid(tab, selected ? 'primarySoft' : 'surface'), border), 8, 'radiusSmall');
+        return click(tab, selected ? null : id);
+      }), { horizontal: true, gap: 8 });
+    const googleAuth = title => {
+      const separator = stack('Phân cách Google', contentWidth, [
+        rect('Đường phân cách', 148, 1, 'border'),
+        t('Hoặc', 'captionLabel', 'textMuted'),
+        rect('Đường phân cách', 148, 1, 'border')
+      ], { horizontal: true, spread: true });
+      const icon = figma.createRectangle();
+      icon.name = 'Google G';
+      icon.resize(20, 20);
+      const googleImage = figma.createImage(figma.base64Decode(googleMarkPng));
+      icon.fills = [{ type: 'IMAGE', scaleMode: 'FIT', imageHash: googleImage.hash }];
+      const label = title + ' bằng Google';
+      const action = stack(label, contentWidth, [icon, t(label, 'bodyMedium')], { horizontal: true, padding: [12, 12] });
+      action.primaryAxisAlignItems = 'CENTER';
+      radius(outline(solid(action, 'surface')), 8, 'radiusSmall');
+      return stack('Xác thực bằng Google', contentWidth, [separator, click(action, 'home')], { gap: 12 });
+    };
     const drawContent = (frame, data, withLinks = true) => {
       const [id, title, active, rows] = data;
-      header(frame, title, withLinks ? (detailed && id === 'report' ? 'back' : back[id]) : null);
-      const content = stack('Nội dung',contentWidth,rows.map(row => render(row,id)),{gap:detailed ? 12 : 8});
+      const auth = id === 'login' || id === 'register';
+      const head = header(title, withLinks ? (detailed && id === 'report' ? 'back' : back[id]) : null);
+      const content = stack('Nội dung',contentWidth,rows.map(row => render(row,id)),{gap:auth || detailed ? 12 : 8});
+      if (auth) {
+        const logo = figma.createNodeFromSvg(wordmarkSvg);
+        logo.name = 'Our Budget · Wordmark';
+        const form = stack('Tài khoản', contentWidth, [logo, head, authTabs(id), content, googleAuth(title)], { gap: 16 });
+        place(frame, form, 16, 32);
+        contentBounds.push([frame, form, H]);
+        return;
+      }
+      place(frame,head,16,24);
       place(frame,content,16,68);
       if (active) nav(frame,active);
       contentBounds.push([frame, content, H - (active ? 88 : 0)]);
@@ -398,11 +443,12 @@ async function build() {
       await node.setReactionsAsync([{trigger:{type:'ON_CLICK'},actions:[{type:'NODE',destinationId:next.id,navigation:'NAVIGATE',transition,preserveScrollPosition:false}]}]);
     }
     step = 'Thiết lập luồng prototype';
-    const starts = [{nodeId:destinations.home.id,name:'Ghi chép hằng ngày'}];
-    if (!detailed) starts.push({nodeId:destinations.login.id,name:'Tài khoản và đăng nhập'});
-    page.flowStartingPoints = starts;
+    page.flowStartingPoints = [
+      {nodeId:destinations.login.id,name:'Tài khoản và đăng nhập'},
+      {nodeId:destinations.home.id,name:'Ghi chép hằng ngày'}
+    ];
     page.name = pageName;
-    const preview = [destinations.home, destinations[detailed ? 'history' : 'quick'], destinations.budgets];
+    const preview = [destinations.login, destinations.register];
     page.selection = preview;
     figma.viewport.scrollAndZoomIntoView(preview);
     figma.closePlugin('Đã tạo ' + Object.keys(destinations).length + (detailed ? ' màn hình chính.' : ' wireframe có liên kết prototype.'));

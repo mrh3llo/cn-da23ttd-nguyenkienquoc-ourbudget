@@ -1,13 +1,17 @@
 # Our Budget — Giao diện chính và user flow
 
+**Bổ sung đề xuất 20/11/2026:** nút Google trong bản mẫu sẽ đi qua xác minh Google ID token tại PHP, có nhánh hủy/lỗi và liên kết tài khoản trùng email; chưa phải chức năng đã chạy. Bổ sung màn hình xác minh email, ví mặc định thứ tự 0 rồi tăng dần, bộ chọn Material Icons cục bộ và fallback cho logo. Email đăng ký/đăng nhập/tạo–sửa–xóa thu chi được backend gửi sau thành công, không chặn màn hình lưu khi SMTP lỗi. Bản mẫu Figma và mã giao diện chưa được cập nhật cho các nhánh này. [Đặc tả đầy đủ](proposal-google-email-icons.md).
+
 Bản thiết kế để duyệt trước khi lập trình. Đối chiếu với [đặc tả UC1–UC24](use-case-diagram.md), [đề xuất kiến trúc](system-architecture.md), [wireframe và hướng dẫn xuất Figma](../dgr/wireframes-figma/README.md).
 
 ## Giao diện chính
 
-Bảy khung Android 390 × 844 dùng Inter, các biến màu và component của hệ thống thiết kế Our Budget. Thanh điều hướng giữ bốn tab **Trang chủ**, **Lịch sử**, **Ngân sách**, **Cá nhân** và nút **+** ghi giao dịch nhanh. Mỗi khung thể hiện nội dung chính và điểm bắt đầu thao tác. Biểu mẫu, hộp xác nhận, thông báo và nhánh lỗi được đặc tả ở các bảng bên dưới.
+Chín khung Android 390 × 844 dùng Inter, các biến màu và component của hệ thống thiết kế Our Budget. Bộ này gồm hai khung tài khoản và bảy khung sau khi đăng nhập. Thanh điều hướng giữ bốn tab **Trang chủ**, **Lịch sử**, **Ngân sách**, **Cá nhân** và nút **+** ghi giao dịch nhanh. Các biểu mẫu nghiệp vụ, hộp xác nhận, thông báo và nhánh lỗi được đặc tả ở các bảng bên dưới.
 
 | Màn hình | Nội dung | Điều hướng và thao tác |
 | --- | --- | --- |
+| Đăng nhập | Cụm nút chuyển chế độ, email, mật khẩu và mục **Đăng nhập bằng Google** dưới biểu mẫu | Chọn **Đăng ký** để đổi chế độ. Nút Đăng nhập và nút Google đều mô phỏng thành công bằng cách mở Trang chủ. Bộ wireframe còn có liên kết **Quên mật khẩu?**. |
+| Đăng ký | Cụm nút chuyển chế độ, họ và tên, email, số điện thoại, mật khẩu và mục **Đăng ký bằng Google** dưới biểu mẫu | Chọn **Đăng nhập** để đổi chế độ. Nút Tạo tài khoản và nút Google đều mô phỏng thành công bằng cách mở Trang chủ. |
 | Trang chủ | Tổng số dư khả dụng, tiến độ ngân sách tháng, ba giao dịch gần đây | Nút **+** mở UC15. Thẻ ngân sách mở **Ngân sách**. **Xem tất cả** mở **Lịch sử**. |
 | Lịch sử | Giao dịch theo ngày, số tiền có dấu, ví và mốc giờ. Chip cho kỳ, ví và danh mục. | Tìm và lọc theo UC17. Chọn giao dịch để sửa hoặc xóa theo UC18–UC19. |
 | Ngân sách | Kỳ hiện tại, hạn mức, số đã chi, tỷ lệ và nhãn trạng thái | Thêm ngân sách, chọn đúng ngân sách để quản lý, mở **Báo cáo thống kê**. |
@@ -20,7 +24,7 @@ Bảy khung Android 390 × 844 dùng Inter, các biến màu và component của
 
 | UC | Luồng thành công | Nhánh và tiêu chí nghiệm thu |
 | --- | --- | --- |
-| UC1 · Đăng ký | Đăng nhập → Tạo tài khoản → nhập thông tin → xác nhận → vào Trang chủ khi đã có phiên hợp lệ. | Email trùng hoặc dữ liệu sai giữ người dùng ở bước đăng ký. Nếu API yêu cầu xác thực email, chỉ mở Trang chủ sau khi hoàn tất. |
+| UC1 · Đăng ký | Đăng nhập → chọn Đăng ký → nhập thông tin → Tạo tài khoản → vào Trang chủ khi đã có phiên hợp lệ. | Email trùng hoặc dữ liệu sai giữ người dùng ở bước đăng ký. Nếu API yêu cầu xác thực email, chỉ mở Trang chủ sau khi hoàn tất. |
 | UC2 · Đăng nhập | Mở ứng dụng → nhập thông tin → máy chủ xác thực → lưu phiên → Trang chủ. | Sai thông tin thì ở lại bước đăng nhập. Phiên hết hạn chuyển về cổng đăng nhập, không hiển thị dữ liệu của phiên cũ. |
 | UC3 · Quên mật khẩu | Đăng nhập → Quên mật khẩu → gửi yêu cầu qua email → xác minh OTP → đặt mật khẩu mới → quay về Đăng nhập. | OTP sai, hết hạn hoặc đã dùng phải bị từ chối. Cho gửi lại có giới hạn. Phản hồi yêu cầu gửi mã không tiết lộ email có tồn tại. |
 | UC4 · Đăng xuất | Cá nhân → Đăng xuất → kết thúc phiên → Đăng nhập. | Xóa phiên và dữ liệu tài khoản trên thiết bị, không cho nút Back mở lại màn hình được bảo vệ. |
@@ -68,4 +72,4 @@ Bảy khung Android 390 × 844 dùng Inter, các biến màu và component của
 ## Bàn giao triển khai
 
 - Dùng [đề xuất kiến trúc](system-architecture.md) để đối chiếu nhóm tài nguyên API. Duyệt hợp đồng API, chính sách xóa có liên kết, phạm vi ngân sách và cách xử lý phiên trước khi lập trình.
-- Khi kiểm thử giao diện, xác nhận đủ bảy khung Figma và thử các liên kết **Trang chủ → Lịch sử**, **Ngân sách → Báo cáo** và **Cá nhân → Nguồn tiền/Danh mục**. Dùng các bảng UC để kiểm thử thành công, hủy, dữ liệu sai, mất phiên và lỗi lưu trong ứng dụng.
+- Khi kiểm thử giao diện, xác nhận đủ chín khung Figma và thử các liên kết **Đăng nhập → Đăng ký → Đăng nhập/Trang chủ**, **Trang chủ → Lịch sử**, **Ngân sách → Báo cáo** và **Cá nhân → Nguồn tiền/Danh mục**. Dùng các bảng UC để kiểm thử thành công, hủy, dữ liệu sai, mất phiên và lỗi lưu trong ứng dụng.

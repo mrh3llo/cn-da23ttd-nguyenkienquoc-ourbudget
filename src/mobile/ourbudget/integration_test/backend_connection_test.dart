@@ -23,7 +23,7 @@ void main() {
       ) as Map<String, dynamic>;
       expect(response.statusCode, 200);
       expect(json['data']['database'], 'ok');
-      expect(json['data']['schema'], '004_step03_foundation');
+      expect(json['data']['schema'], 'report-standardized-sign-amount');
       expect(json['meta']['request_id'], matches(r'^[a-f0-9]{32}$'));
 
       final missing = await client.getUrl(config.endpoint(['does-not-exist']));

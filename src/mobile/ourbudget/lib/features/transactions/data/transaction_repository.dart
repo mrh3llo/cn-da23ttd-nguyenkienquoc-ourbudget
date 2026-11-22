@@ -1,6 +1,6 @@
 import '../../../core/format/finance_format.dart';
 
-enum TransactionKind { expense, income }
+enum TransactionKind { expense, income, transfer }
 
 const expenseCategories = ['Ăn uống', 'Di chuyển', 'Mua sắm', 'Hóa đơn'];
 const incomeCategories = ['Lương', 'Thưởng', 'Hoàn tiền', 'Khác'];
@@ -29,6 +29,7 @@ class TransactionEntry {
     required this.walletId,
     required this.amount,
     required DateTime occurredAt,
+    this.destinationWalletId,
     this.note = '',
   }) : occurredAt = vietnamTime(occurredAt);
 
@@ -37,6 +38,7 @@ class TransactionEntry {
       id: json['id'] as String,
       category: json['category'] as String,
       walletId: json['wallet_id'] as String,
+      destinationWalletId: json['destination_wallet_id'] as String?,
       amount: decodeVnd(json['amount']),
       occurredAt: decodeVietnamTime(json['occurred_at']),
       note: json['note'] as String? ?? '',
@@ -46,6 +48,12 @@ class TransactionEntry {
   final String id;
   final String category;
   final String walletId;
+  final String? destinationWalletId;
+  TransactionKind get kind => destinationWalletId != null
+      ? TransactionKind.transfer
+      : amount.isNegative
+      ? TransactionKind.expense
+      : TransactionKind.income;
   final BigInt amount;
   final DateTime occurredAt;
   final String note;
@@ -67,7 +75,7 @@ class Ledger {
     final spent = entries
         .where(
           (entry) =>
-              entry.amount.isNegative &&
+              entry.kind == TransactionKind.expense &&
               entry.occurredAt.year == month.year &&
               entry.occurredAt.month == month.month,
         )
@@ -79,6 +87,7 @@ class Ledger {
 abstract interface class TransactionRepository {
   Future<Ledger> load();
   Future<Ledger> create({
+    String? destinationWalletId,
     required String category,
     required String walletId,
     required BigInt amount,
@@ -150,6 +159,7 @@ class FakeTransactionRepository implements TransactionRepository {
 
   @override
   Future<Ledger> create({
+    String? destinationWalletId,
     required String category,
     required String walletId,
     required BigInt amount,
@@ -157,14 +167,23 @@ class FakeTransactionRepository implements TransactionRepository {
     required String note,
   }) async {
     final categories = amount.isNegative ? expenseCategories : incomeCategories;
+    final transfer = destinationWalletId != null;
     if (amount == BigInt.zero ||
-        !categories.contains(category) ||
+        amount.abs() > (BigInt.one << 63) - BigInt.one ||
+        (!transfer && !categories.contains(category)) ||
+        (transfer &&
+            (amount.isNegative ||
+                destinationWalletId == walletId ||
+                !_ledger.wallets.any(
+                  (wallet) => wallet.id == destinationWalletId,
+                ))) ||
         !_ledger.wallets.any((wallet) => wallet.id == walletId)) {
       throw const FormatException('Giao dịch không hợp lệ.');
     }
     final entry = TransactionEntry.fromJson({
       'id': '${_nextId++}',
-      'category': category,
+      'category': transfer ? 'Chuyển ví' : category,
+      'destination_wallet_id': destinationWalletId,
       'wallet_id': walletId,
       'amount': amount.toString(),
       'occurred_at': encodeVietnamTime(occurredAt),
@@ -173,11 +192,12 @@ class FakeTransactionRepository implements TransactionRepository {
     _ledger = Ledger(
       [
         for (final wallet in _ledger.wallets)
-          if (wallet.id == walletId)
+          if (wallet.id == walletId || wallet.id == destinationWalletId)
             Wallet(
               wallet.id,
               wallet.name,
-              wallet.balance + amount,
+              wallet.balance +
+                  (transfer && wallet.id == walletId ? -amount : amount),
               isDefault: wallet.isDefault,
             )
           else

@@ -156,7 +156,9 @@ class TransactionTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      entry.category,
+                      entry.kind == TransactionKind.transfer
+                          ? 'Chuyển ví'
+                          : entry.category,
                       style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                     Text(
@@ -169,11 +171,18 @@ class TransactionTile extends StatelessWidget {
             ],
           ),
           Text(
-            formatVnd(entry.amount, showPlus: true),
+            formatVnd(
+              entry.amount,
+              showPlus: entry.kind != TransactionKind.transfer,
+            ),
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontFeatures: numeric,
-              color: entry.amount.isNegative ? expense : income,
+              color: entry.kind == TransactionKind.transfer
+                  ? muted
+                  : entry.amount.isNegative
+                  ? expense
+                  : income,
             ),
           ),
         ],

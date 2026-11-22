@@ -1,6 +1,7 @@
 # Kiến trúc hệ thống OurBudget
+Cập nhật triển khai 22/11/2026: ứng dụng hiện dùng Supabase PostgreSQL qua API PHP. Các mô tả MySQL phía dưới phản ánh báo cáo hoặc phương án ban đầu; xem [ghi chú chuyển đổi](supabase-migration.md) và [hướng dẫn Supabase](../../supabase/SUPABASE.md).
 
-**Tiến độ bước 03:** đã bổ sung migration thứ tự ví 0, 1, 2, …, identity Google, xác minh email, outbox và nền PHP/worker. [Hợp đồng HTTP](http-api-contract.md) và [hướng dẫn backend](../backend/README.md) là tài liệu triển khai. Luồng đăng nhập Google, email theo nghiệp vụ và bộ chọn icon chưa nối vào Flutter; thực hiện ở bước 04–07. [Chi tiết](proposal-google-email-icons.md) · [Setup Google/email](google-email-setup.md).
+**Cập nhật 22/11/2026:** chỉ dùng bảng và thuộc tính trong Word, trừ ngoại lệ đã duyệt tại [chuyển CSDL sang Supabase PostgreSQL](../../supabase/SUPABASE.md). các migration PostgreSQL trong supabase/migrations là nguồn schema triển khai; chưa áp dụng CSDL cá nhân.
 
 Bản chốt thiết kế cho OurBudget trên Android. Phiên bản đầu bao phủ UC1–UC24, gồm tài khoản, nguồn tiền nhập thủ công, danh mục thu/chi, giao dịch, ngân sách và báo cáo. Ảnh hóa đơn thuộc hướng phát triển sau phiên bản đầu. Ví điện tử và tài khoản ngân hàng được theo dõi như nguồn tiền nhập thủ công, độc lập với hệ thống của tổ chức cung cấp dịch vụ.
 
@@ -15,7 +16,7 @@ Kiến trúc đề xuất tương thích với nền tảng công nghệ và ph�
 | Tiền và thời gian | §3.3.2 dùng `BIGINT` cho số tiền giao dịch và số dư ví, còn hạn mức dùng `DECIMAL`. Báo cáo đã chọn múi giờ Việt Nam. Bản đề xuất ban đầu dùng `DECIMAL` và chuỗi thập phân. | Dùng `BIGINT` theo đơn vị đồng cho mọi giá trị tiền tệ, truyền bằng chuỗi số nguyên và thống nhất biên kỳ theo `Asia/Ho_Chi_Minh`. |
 | Danh mục, ví và chuyển nội bộ | §3.3 đã tách `income_categories` và `outcome_categories`, thêm ví đích và độ ưu tiên của ví. Từ điển dữ liệu vẫn có `expensecate_id`, trong khi quan hệ sở hữu danh mục chưa được thể hiện. | Đồng bộ khóa danh mục và quyền sở hữu ở §3.3, cách chọn ví mặc định ở §3.3–3.4 và quy tắc ghi nhận chuyển nội bộ ở §3.2–3.3. |
 | Ngân sách và báo cáo | §3.1.2 và giao diện Trang chủ có ngân sách tổng. §3.2.1–3.2.2 mô tả chủ yếu ngân sách theo danh mục và đã có công thức, ngưỡng cảnh báo. | Bổ sung phạm vi ngân sách tổng ở §3.2–3.3, đồng bộ nguồn dữ liệu và quy tắc loại trừ chuyển nội bộ. |
-| Mô hình vật lý và xác thực | §3.3.2 mô tả MySQL, nhưng Hình 3.5 và tệp PDM còn theo SAP SQL Anywhere 17. Use-case tài khoản có đăng xuất và quên mật khẩu, còn bảng phiên và khôi phục chưa được mô tả. | Chuyển đích PDM sang MySQL InnoDB, cập nhật Hình 3.5 và từ điển dữ liệu trước khi sinh DDL. |
+| Mô hình vật lý và xác thực | §3.3.2 mô tả MySQL, nhưng Hình 3.5 và tệp PDM còn theo SAP SQL Anywhere 17. Thuộc tính phiên và khôi phục chưa được mô tả đầy đủ. | Giữ 7 thực thể, bổ sung thuộc tính trong users; chuyển đích PDM sang MySQL InnoDB và cập nhật từ điển dữ liệu. |
 | Phạm vi ảnh hóa đơn | §3.1.1 nhắc ảnh hóa đơn trong phần định hướng. Phạm vi UC1–UC24 và mô hình dữ liệu chưa có nghiệp vụ tương ứng. | Ghi rõ ảnh hóa đơn là hướng phát triển sau phiên bản đầu tại §3.1.1. |
 
 ## Thành phần và trách nhiệm
@@ -26,7 +27,7 @@ Kiến trúc đề xuất tương thích với nền tảng công nghệ và ph�
 | RESTful API PHP | Triển khai một ứng dụng máy chủ, tổ chức theo phân hệ. Bộ định tuyến và controller xử lý HTTP/JSON, lớp xác thực xác định tài khoản, lớp dịch vụ kiểm tra nghiệp vụ và quản lý giao tác, lớp truy cập dữ liệu dùng PDO với câu lệnh tham số hóa. |
 | MySQL InnoDB | Nguồn dữ liệu chính, dùng `utf8mb4`, khóa ngoại và chỉ mục cho lịch sử giao dịch, ngân sách và báo cáo. Kết nối cơ sở dữ liệu thuộc về API PHP. |
 | Google Identity (đề xuất) | Xác minh danh tính Google để backend liên kết tài khoản và cấp phiên OurBudget. |
-| Worker email và dịch vụ gửi thư (đề xuất) | Đọc outbox sau commit, gửi thông báo và quản lý retry độc lập với phản hồi lưu giao dịch. |
+| Worker email | Đọc queue tệp riêng sau commit, khóa tệp khi gửi và retry tối đa năm lần. |
 
 ## Phân hệ và hợp đồng API
 
@@ -70,14 +71,18 @@ Quyền truy cập được kiểm tra theo người dùng lấy từ phiên xá
 
 ### Mở rộng đề xuất Google, icon và email
 
-Đề xuất `POST /api/v1/auth/google` để đổi Google ID token đã được PHP xác minh thành phiên OurBudget. Danh tính liên kết qua `provider + sub` trong bảng dự kiến `user_identities`; không tự gộp tài khoản chỉ vì email trùng. Tài khoản chỉ dùng Google có thể không có hash mật khẩu nội bộ. Email liên hệ được xác minh trước khi nhận dữ liệu tài chính. [Hướng dẫn OAuth Android/Web client](google-email-setup.md).
+Google ID token được xác minh trên PHP; liên kết bằng thuộc tính UNIQUE `user_google_sub` trong users, không tự ghép theo email. Mật khẩu cho phép NULL với Google-only. Token phiên và mã xác minh/khôi phục cũng là thuộc tính users. Một tài khoản chỉ có một phiên hiện hành, tối đa 30 ngày.
 
 Đề xuất dùng Material Icons cục bộ với mã icon ổn định và fallback; logo ví thương hiệu dùng asset có quyền sử dụng. Flaticon API là phương án thay thế qua backend nếu cần kho icon rộng hơn; không nhúng khóa API trong APK.
 
-Email dành cho đăng ký, đăng nhập chủ động thành công và tạo/sửa/xóa thu chi đã commit. PHP ghi `email_outbox` cùng giao tác nghiệp vụ; worker gửi sau commit bằng tài khoản hệ thống, retry có giới hạn. Lỗi SMTP không đảo ngược giao dịch đã lưu. Khóa sự kiện ngăn tạo trùng outbox khi replay; SMTP không bảo đảm chuyển phát đúng một lần trong mọi tình huống. Đăng ký tự cấp phiên không phát thêm thư đăng nhập; khôi phục phiên không gửi mail. [Phạm vi, schema đề xuất và nghiệm thu](proposal-google-email-icons.md).
+PHP ghi queue tệp sau commit, worker khóa tệp và kiểm tra lại người nhận trước khi gửi. Queue nằm ngoài webroot, không có bảng MySQL. Mã xác minh/khôi phục được gửi tới email liên hệ; thư chào mừng, đăng nhập và thu/chi chỉ gửi khi email đã xác minh. Khôi phục phiên không gửi thư. API tài chính phát sự kiện sẽ được nối ở bước 06–07.
 
 ### Điều kiện triển khai
 
 ERD và PDM đích MySQL cần thể hiện các khóa ngoại, chỉ mục, quan hệ tài khoản, phiên đăng nhập, khôi phục mật khẩu và chống ghi trùng trước khi sinh DDL từ mô hình. Bước 03 dùng PHP 8.2/PDO trực tiếp, chưa cần framework; PHPMailer phụ trách MIME/SMTP. Cấu hình nằm ngoài webroot và đọc giá trị cục bộ/biến môi trường. Mô hình native còn chờ đồng bộ theo metadata MySQL; chi tiết endpoint nghiệp vụ được chốt trong bước 04–09. [Hợp đồng HTTP](http-api-contract.md) và [cách chạy](../backend/README.md).
 
 Các ca nghiệm thu trọng tâm bao gồm cách ly hai tài khoản, thu hồi phiên, từ chối mã khôi phục hết hạn hoặc đã dùng, tạo giao dịch chỉ một lần khi gửi lại, cập nhật số dư đúng khi ghi đồng thời và rollback khi một bước ghi thất bại. Đối với báo cáo và ngân sách, cần kiểm tra chuyển nội bộ, sửa hoặc xóa khoản chi, giao dịch sát biên kỳ, các ngưỡng 80% và 100%, và trường hợp truy vấn ngân sách lỗi sau khi giao dịch đã lưu.
+
+## Ràng buộc dữ liệu hiện hành
+
+Không có transactions_type: xét ví đích trước dấu tiền; chuyển ví không tính vào thu/chi hoặc ngân sách. Các đề xuất khóa chống lặp, xóa mềm hoặc thuộc tính ngoài Word phải được duyệt riêng. Queue ghi sau commit, không nguyên tử với CSDL. Xem [chuẩn hóa](../../supabase/SUPABASE.md).
