@@ -58,7 +58,7 @@ Google Sign-In không cấp quyền gửi email tự động. Tài khoản gửi
 
 ## 5. Ảnh hưởng tới dữ liệu và nghiệm thu
 
-Cài mới áp dụng các migration Supabase theo thứ tự; chuyển dữ liệu từ MySQL là một quy trình riêng, không nằm trong các migration schema. Kết quả đúng 7 bảng; metadata trong [model-reference](../../supabase/model-reference.md). Native PowerDesigner cần cập nhật thuộc tính và DBMS, không thêm thực thể.
+Cài mới áp dụng các migration Supabase theo thứ tự; chuyển dữ liệu từ MySQL là một quy trình riêng, không nằm trong các migration schema. Kết quả đúng 7 bảng; metadata trong [model-reference](../supabase/model-reference.md). Native PowerDesigner cần cập nhật thuộc tính và DBMS, không thêm thực thể.
 
 Các ca nghiệm thu bổ sung gồm vị trí ví 0/1/2 và đổi mặc định đồng thời; icon offline/mã lạ/logo thiếu; hủy Google, token sai audience/hết hạn, trùng email và liên kết trái phép; thư đăng ký/đăng nhập; tạo/sửa/xóa thu chi, rollback không sinh thư, idempotent replay không thêm queue tệp, lỗi SMTP và worker dừng giữa chừng. Các kiểm thử SQL đã có là kết quả của phiên bản cũ, chưa chứng minh các đề xuất này hoạt động.
 

@@ -7,7 +7,7 @@ technical attributes on users and the approved transaction classification.
 ## Deploy
 
 1. In Supabase, open **SQL Editor** for project ohztwpsabwfhovrcvxnq.
-2. Run the timestamped SQL files in supabase/migrations/ in ascending order,
+2. Run the timestamped SQL files in `migrations/` in ascending order,
    or apply the same migrations using the Supabase CLI.
 3. Confirm that the seven application tables exist in the public schema.
 4. Do not run the retired MySQL scripts; they were removed during this migration.
@@ -22,16 +22,16 @@ The probes made no schema changes and read or wrote no application rows.
 
 ## Transaction rules
 
-transactions_type is not present. A positive amount with income_id is
-income; a negative amount with outcome_id is expense; a positive amount with
-destination_wallet_id is a transfer. Reports and budgets must filter
-destination_wallet_id IS NULL before summing income or expense.
+`transactions_type` is not present. A positive amount with `income_id` is
+income; a negative amount with `outcome_id` is expense; a positive amount with
+`destination_wallet_id` is a transfer. Reports and budgets must filter
+`destination_wallet_id IS NULL` before summing income or expense.
 
 The custom PHP API remains the only application database client. RLS is enabled
-on every application table, and anon/authenticated receive no table grants.
+on every application table, and `anon`/`authenticated` receive no table grants.
 Do not add client policies or expose the database key to Flutter without a
 separate access-control review.
 
 Use [SUPABASE.md](SUPABASE.md) for deployment. Migrations are in `migrations/`,
-and disposable database checks are in `tests/`. Keep this root `supabase/`
+and disposable database checks are in `tests/`. Keep this `src/supabase/`
 directory as the deployed schema source of truth; `src/database/` is retired.

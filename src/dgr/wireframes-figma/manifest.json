@@ -8,8 +8,18 @@
   ],
   "documentAccess": "dynamic-page",
   "menu": [
-    { "name": "Giao diện chi tiết", "command": "detail" },
-    { "name": "Wireframe 36 khung", "command": "wireframe" }
+    {
+      "name": "Giao diện chi tiết",
+      "command": "detail"
+    },
+    {
+      "name": "Wireframe 36 khung",
+      "command": "wireframe"
+    },
+    {
+      "name": "Cá nhân và thanh điều hướng · Bản duyệt",
+      "command": "profile-review"
+    }
   ],
   "networkAccess": {
     "allowedDomains": [

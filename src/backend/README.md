@@ -18,7 +18,7 @@ use transaction pooling for this persistent PDO connection.
 
 ## Database
 
-Apply the ordered SQL files in supabase/migrations/ to a new Supabase project
+Apply the ordered SQL files in ../supabase/migrations/ to a new Supabase project
 before starting the API. The schema has seven OurBudget entities and enables
 RLS with no grants for client API roles. The backend connects using server-side
 PostgreSQL credentials; neither database credentials nor the secret key belong
@@ -37,4 +37,4 @@ configure an empty disposable PostgreSQL database ending in _test for the
 integration tests. Do not point tests at the hosted or personal database.
 
 
-Run schema checks with a disposable database: php supabase/tests/verify.php and php supabase/tests/verify-report.php.
+Run schema checks with a disposable database: php ../supabase/tests/verify.php and php ../supabase/tests/verify-report.php.

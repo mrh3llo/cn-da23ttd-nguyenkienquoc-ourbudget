@@ -6,6 +6,7 @@ import 'auth_controller.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
+
   @override
   State<AuthPage> createState() => _AuthPageState();
 }
@@ -15,15 +16,14 @@ class _AuthPageState extends State<AuthPage> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
-  final _code = TextEditingController();
   String _mode = 'login';
   String? _notice;
 
   @override
   void dispose() {
-    for (final controller in [_name, _email, _password, _code]) {
-      controller.dispose();
-    }
+    _name.dispose();
+    _email.dispose();
+    _password.dispose();
     super.dispose();
   }
 
@@ -31,38 +31,27 @@ class _AuthPageState extends State<AuthPage> {
     _mode = mode;
     _notice = null;
     _password.clear();
-    _code.clear();
   });
 
-  Future<void> _submit() async {
+  Future<void> _submit(String mode) async {
     if (!_form.currentState!.validate()) return;
     final auth = context.read<AuthController>();
-    final success = await switch (_mode) {
+    final success = await switch (mode) {
       'register' => auth.register(
         _name.text.trim(),
         _email.text.trim(),
         _password.text,
       ),
       'forgot' => auth.forgot(_email.text.trim()),
-      'reset' => auth.reset(
-        _email.text.trim(),
-        _code.text.trim(),
-        _password.text,
-      ),
+      'reset' => auth.reset(_password.text),
       _ => auth.passwordLogin(_email.text.trim(), _password.text),
     };
     if (!mounted || !success) return;
-    if (_mode == 'forgot') {
-      setState(() {
-        _mode = 'reset';
-        _notice = 'Nếu email có tài khoản dùng mật khẩu, mã khôi phục đã được yêu cầu gửi. Tài khoản Google hãy dùng đăng nhập Google.';
-      });
-    } else if (_mode == 'reset') {
+    if (mode == 'forgot' || mode == 'register') {
       setState(() {
         _mode = 'login';
         _password.clear();
-        _code.clear();
-        _notice = 'Đã đổi mật khẩu. Hãy đăng nhập lại.';
+        _notice = auth.notice;
       });
     }
   }
@@ -70,7 +59,8 @@ class _AuthPageState extends State<AuthPage> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
-    final title = switch (_mode) {
+    final mode = auth.isPasswordRecovery ? 'reset' : _mode;
+    final title = switch (mode) {
       'register' => 'Tạo tài khoản',
       'forgot' => 'Quên mật khẩu',
       'reset' => 'Đặt lại mật khẩu',
@@ -99,10 +89,10 @@ class _AuthPageState extends State<AuthPage> {
               children: [
                 Text(title, style: Theme.of(context).textTheme.headlineMedium),
                 const SizedBox(height: 24),
-                if (_notice != null)
+                if (_notice != null || auth.notice != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: spacing),
-                    child: Text(_notice!),
+                    child: Text(_notice ?? auth.notice!),
                   ),
                 if (auth.error != null)
                   Padding(
@@ -112,7 +102,7 @@ class _AuthPageState extends State<AuthPage> {
                       style: const TextStyle(color: expense),
                     ),
                   ),
-                if (_mode == 'register') ...[
+                if (mode == 'register') ...[
                   TextFormField(
                     controller: _name,
                     enabled: !auth.busy,
@@ -123,39 +113,32 @@ class _AuthPageState extends State<AuthPage> {
                   ),
                   const SizedBox(height: spacing),
                 ],
-                TextFormField(
-                  controller: _email,
-                  enabled: !auth.busy,
-                  keyboardType: TextInputType.emailAddress,
-                  autofillHints: const [AutofillHints.email],
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  validator: (value) => value == null || !value.contains('@')
-                      ? 'Nhập email hợp lệ.'
-                      : null,
-                ),
-                const SizedBox(height: spacing),
-                if (_mode == 'reset') ...[
+                if (mode != 'reset') ...[
                   TextFormField(
-                    controller: _code,
+                    controller: _email,
                     enabled: !auth.busy,
-                    autocorrect: false,
-                    decoration: const InputDecoration(
-                      labelText: 'Mã khôi phục trong email',
-                    ),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Dán mã nhận được qua email.'
+                    keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    validator: (value) => value == null ||
+                            !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                                .hasMatch(value.trim())
+                        ? 'Nhập email hợp lệ.'
                         : null,
                   ),
                   const SizedBox(height: spacing),
                 ],
-                if (_mode != 'forgot') ...[
+                if (mode != 'forgot') ...[
                   TextFormField(
                     controller: _password,
                     enabled: !auth.busy,
                     obscureText: true,
                     autocorrect: false,
+                    autofillHints: mode == 'login'
+                        ? const [AutofillHints.password]
+                        : const [AutofillHints.newPassword],
                     decoration: InputDecoration(
-                      labelText: _mode == 'reset' ? 'Mật khẩu mới' : 'Mật khẩu',
+                      labelText: mode == 'reset' ? 'Mật khẩu mới' : 'Mật khẩu',
                     ),
                     validator: (value) => value == null || value.length < 8
                         ? 'Nhập ít nhất 8 ký tự.'
@@ -164,10 +147,10 @@ class _AuthPageState extends State<AuthPage> {
                   const SizedBox(height: spacing),
                 ],
                 FilledButton(
-                  onPressed: auth.busy ? null : _submit,
+                  onPressed: auth.busy ? null : () => _submit(mode),
                   child: Text(auth.busy ? 'Đang xử lý…' : title),
                 ),
-                if (_mode == 'login' || _mode == 'register') ...[
+                if (mode == 'login' || mode == 'register') ...[
                   OutlinedButton.icon(
                     onPressed: auth.busy ? null : auth.googleLogin,
                     icon: const Icon(Icons.account_circle_outlined),
@@ -176,21 +159,20 @@ class _AuthPageState extends State<AuthPage> {
                   TextButton(
                     onPressed: auth.busy
                         ? null
-                        : () =>
-                              _change(_mode == 'login' ? 'register' : 'login'),
+                        : () => _change(mode == 'login' ? 'register' : 'login'),
                     child: Text(
-                      _mode == 'login'
+                      mode == 'login'
                           ? 'Chưa có tài khoản? Đăng ký'
                           : 'Đã có tài khoản? Đăng nhập',
                     ),
                   ),
                 ],
-                if (_mode == 'login')
+                if (mode == 'login')
                   TextButton(
                     onPressed: auth.busy ? null : () => _change('forgot'),
                     child: const Text('Quên mật khẩu?'),
                   ),
-                if (_mode == 'forgot' || _mode == 'reset')
+                if (mode == 'forgot' || mode == 'reset')
                   TextButton(
                     onPressed: auth.busy ? null : () => _change('login'),
                     child: const Text('Quay lại đăng nhập'),

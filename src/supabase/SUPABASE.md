@@ -17,7 +17,9 @@ The simplest deployment path is the Supabase Dashboard:
 4. Inspect the seven tables, foreign keys, checks, indexes, RLS and identities
    in the dashboard, then run the test scripts from a secured backend host.
 
-The CLI workflow is for a new empty project only. Do not run `supabase db push` on the current project until its migration history and deployed schema have been reconciled.
+The CLI workflow is for a new empty project only. From the repository root,
+use `supabase --workdir src/supabase db push`. Do not run it on the current
+project until its migration history and deployed schema have been reconciled.
 
 
 Never put that password in the repository or a command committed to shell

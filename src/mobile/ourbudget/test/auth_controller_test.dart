@@ -5,142 +5,173 @@ import 'package:ourbudget/core/config/api_config.dart';
 import 'package:ourbudget/core/network/api_client.dart';
 import 'package:ourbudget/features/auth/data/auth_repository.dart';
 import 'package:ourbudget/features/auth/presentation/auth_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class MemoryStore implements TokenStore {
-  String? value;
+class FakeAuth implements AuthGateway {
+  final eventsController = StreamController<AuthEvent>.broadcast();
   @override
-  Future<String?> read() async => value;
+  bool hasSession = false;
+  bool registrationNeedsVerification = true;
+  bool googleCanStart = true;
+  int loginCalls = 0;
   @override
-  Future<void> write(String token) async {
-    value = token;
+  String? accessToken;
+
+  void signedIn() {
+    hasSession = true;
+    accessToken = 'supabase-access-token';
+    currentUser = {
+      'id': 'user-1',
+      'name': 'Test User',
+      'email': 'test@example.com',
+      'phone': '',
+      'avatar_url': '',
+      'email_verified': true,
+      'has_password': true,
+      'google_linked': false,
+    };
+    eventsController.add(AuthEvent.signedIn);
   }
 
   @override
-  Future<void> clear() async {
-    value = null;
+  Stream<AuthEvent> get events => eventsController.stream;
+  @override
+  Future<void> passwordLogin(String email, String password) async {
+    loginCalls++;
+    if (password == 'wrong-password') {
+      throw const AuthException('Invalid login credentials');
+    }
+    signedIn();
   }
-}
 
-class FakeGoogle extends GoogleLogin {
   @override
-  Future<void> signOut() async {}
-}
+  Future<bool> register(String name, String email, String password) async {
+    if (email == 'duplicate@example.com') {
+      throw const AuthException('User already registered');
+    }
+    if (!registrationNeedsVerification) signedIn();
+    return !registrationNeedsVerification;
+  }
 
-class StubAuth extends AuthRepository {
-  StubAuth()
-    : super(ApiClient(const ApiConfig(baseUrl: 'https://example.invalid')));
-  Future<Map<String, dynamic>> Function(
-    String path,
-    Map<String, dynamic>? body,
-  )?
-  handler;
   @override
-  Future<Map<String, dynamic>> request(
-    String method,
-    String path, {
-    Map<String, dynamic>? body,
-    bool authenticated = true,
-    String? token,
-  }) => handler!(path, body);
-}
+  Future<bool> googleLogin() async => googleCanStart;
+  @override
+  Future<void> forgot(String email) async {}
+  @override
+  Future<void> reset(String password) async => signedIn();
+  @override
+  Future<void> resendVerification(String email) async {}
+  @override
+  Future<void> updateProfile(Map<String, dynamic> values) async {
+    currentUser = {...?currentUser, 'name': values['name']};
+  }
+  @override
+  Future<bool> linkGoogle() async => true;
+  @override
+  Future<void> signOut() async {
+    hasSession = false;
+    accessToken = null;
+    currentUser = null;
+    eventsController.add(AuthEvent.signedOut);
+  }
 
-Map<String, dynamic> account(String id) => {
-  'id': id,
-  'name': 'User $id',
-  'email': '$id@example.test',
-  'email_verified': true,
-  'has_password': true,
-  'google_linked': false,
-};
+  @override
+  Map<String, dynamic>? get currentUser => _currentUser;
+  set currentUser(Map<String, dynamic>? value) => _currentUser = value;
+  Map<String, dynamic>? _currentUser;
+
+  Future<void> close() => eventsController.close();
+}
 
 void main() {
-  late MemoryStore store;
-  late StubAuth repository;
+  late FakeAuth gateway;
   late AuthController auth;
-  setUp(() {
-    store = MemoryStore();
-    repository = StubAuth();
-    auth = AuthController(repository, store, FakeGoogle());
-  });
-  tearDown(() => auth.dispose());
+  late ApiClient api;
 
-  test('offline restore retains token without opening private UI', () async {
-    store.value = 'saved';
-    repository.handler = (_, _) async =>
-        throw const ApiException(0, 'network_unavailable', 'Offline');
+  setUp(() async {
+    gateway = FakeAuth();
+    api = ApiClient(const ApiConfig(baseUrl: 'https://example.invalid'));
+    auth = AuthController(gateway, api);
     await auth.restore();
-    expect(auth.state, SessionState.unavailable);
+  });
+  tearDown(() async {
+    auth.dispose();
+    await gateway.close();
+  });
+
+  test('restores Supabase session and exposes its bearer token to API', () async {
+    gateway.signedIn();
+    await auth.restore();
+    expect(auth.state, SessionState.signedIn);
+    expect(auth.user!['id'], 'user-1');
+    expect(api.sessionToken!(), 'supabase-access-token');
+  });
+
+  test('successful email login opens the authenticated route', () async {
+    expect(await auth.passwordLogin('test@example.com', 'Password!123'), isTrue);
+    expect(auth.state, SessionState.signedIn);
+  });
+
+  test('incorrect credentials remain signed out with a clear error', () async {
+    expect(await auth.passwordLogin('test@example.com', 'wrong-password'), isFalse);
+    expect(auth.state, SessionState.signedOut);
+    expect(auth.error, 'Email hoặc mật khẩu không đúng.');
+  });
+
+  test('registration waits for email confirmation when Supabase requires it', () async {
+    expect(await auth.register('Test', 'test@example.com', 'Password!123'), isTrue);
+    expect(auth.state, SessionState.signedOut);
+    expect(auth.notice, contains('xác minh'));
+  });
+
+  test('duplicate registration reports the provider error without signing in', () async {
+    expect(
+      await auth.register('Test', 'duplicate@example.com', 'Password!123'),
+      isFalse,
+    );
+    expect(auth.state, SessionState.signedOut);
+    expect(auth.error, 'Email này đã được đăng ký.');
+  });
+
+  test('forgot password uses a generic notice and recovery event opens reset mode', () async {
+    expect(await auth.forgot('test@example.com'), isTrue);
+    expect(auth.notice, contains('Nếu email đã đăng ký'));
+    gateway.eventsController.add(AuthEvent.passwordRecovery);
+    await Future<void>.delayed(Duration.zero);
+    expect(auth.isPasswordRecovery, isTrue);
+    expect(auth.state, SessionState.signedOut);
+  });
+
+  test('password reset accepts the recovery session and enters the app', () async {
+    gateway.signedIn();
+    gateway.eventsController.add(AuthEvent.passwordRecovery);
+    await Future<void>.delayed(Duration.zero);
+    expect(await auth.reset('NewPassword!123'), isTrue);
+    expect(auth.isPasswordRecovery, isFalse);
+    expect(auth.state, SessionState.signedIn);
+  });
+
+  test('Google cancellation leaves the authentication screen available', () async {
+    gateway.googleCanStart = false;
+    expect(await auth.googleLogin(), isFalse);
+    expect(auth.state, SessionState.signedOut);
+    expect(auth.notice, 'Đăng nhập Google đã bị hủy.');
+  });
+
+  test('Google callback event restores the authenticated route', () async {
+expect(authRedirectUrl, 'com.ourbudget.ourbudget://auth-callback');
+    expect(await auth.googleLogin(), isTrue);
+    gateway.signedIn();
+    await Future<void>.delayed(Duration.zero);
+    expect(auth.state, SessionState.signedIn);
+  });
+
+  test('logout clears session and authenticated user state', () async {
+    gateway.signedIn();
+    await auth.restore();
+    await auth.logout();
+    expect(auth.state, SessionState.signedOut);
     expect(auth.user, isNull);
-    expect(store.value, 'saved');
-  });
-
-  test('late profile response from A cannot enter session B', () async {
-    repository.handler = (_, _) async => {
-      'token': 'token-a',
-      'user': account('a'),
-    };
-    await auth.passwordLogin('a@example.test', 'Password!123');
-    final delayed = Completer<Map<String, dynamic>>();
-    repository.handler = (path, _) async =>
-        path == 'me' ? delayed.future : {'revoked': true};
-    final update = auth.updateProfile({
-      'name': 'Old A',
-      'email': 'a@example.test',
-    });
-    await auth.logout();
-    expect(store.value, isNull);
-    repository.handler = (_, _) async => {
-      'token': 'token-b',
-      'user': account('b'),
-    };
-    await auth.passwordLogin('b@example.test', 'Password!123');
-    delayed.complete({'user': account('a')});
-    expect(await update, isFalse);
-    expect(auth.user!['id'], 'b');
-    expect(store.value, 'token-b');
-    repository.api.onExpired!('token-a');
-    await Future<void>.delayed(Duration.zero);
-    expect(auth.user!['id'], 'b');
-  });
-
-  test('late sign-in cannot resurrect a logged-out session', () async {
-    final delayed = Completer<Map<String, dynamic>>();
-    repository.handler = (_, _) => delayed.future;
-    final login = auth.passwordLogin('a@example.test', 'Password!123');
-    await auth.logout();
-    delayed.complete({'token': 'old', 'user': account('a')});
-    expect(await login, isFalse);
-    expect(auth.state, SessionState.signedOut);
-    expect(store.value, isNull);
-  });
-
-  test(
-    'offline logout clears local session and reports unconfirmed revoke',
-    () async {
-      repository.handler = (_, _) async => {
-        'token': 'token-a',
-        'user': account('a'),
-      };
-      await auth.passwordLogin('a@example.test', 'Password!123');
-      repository.handler = (_, _) async =>
-          throw const ApiException(0, 'network_unavailable', 'Offline');
-      await auth.logout();
-      expect(store.value, isNull);
-      expect(auth.user, isNull);
-      expect(auth.state, SessionState.signedOut);
-      expect(auth.error, contains('chưa xác nhận'));
-    },
-  );
-
-  test('expired current session clears secure storage', () async {
-    repository.handler = (_, _) async => {
-      'token': 'token-a',
-      'user': account('a'),
-    };
-    await auth.passwordLogin('a@example.test', 'Password!123');
-    repository.api.onExpired!('token-a');
-    await Future<void>.delayed(Duration.zero);
-    expect(store.value, isNull);
-    expect(auth.state, SessionState.signedOut);
+    expect(gateway.hasSession, isFalse);
   });
 }

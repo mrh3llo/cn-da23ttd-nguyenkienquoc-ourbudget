@@ -40,8 +40,10 @@ const SCREENS = [
 const W = 390;
 const H = 844;
 const contentWidth = 358;
+const profileReview = figma.command === 'profile-review';
 const detailed = figma.command !== 'wireframe';
-const pageName = detailed ? 'Giao diện chi tiết · Our Budget · Xác thực' : 'Wireframes · Our Budget · Xác thực';
+const pageName = profileReview ? 'Our Budget · Cá nhân · Bản duyệt'
+  : detailed ? 'Giao diện chi tiết · Our Budget · Xác thực' : 'Wireframes · Our Budget · Xác thực';
 // Official mark from developers.google.com/static/identity/images/g-logo.png, downsampled to 40 px.
 const googleMarkPng = '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';
 // Figma's plugin sandbox cannot read the standalone our-budget-wordmark.svg.
@@ -94,13 +96,117 @@ const back = {
 };
 const bankNames = { 'quick-bank': 'Ngân hàng', 'quick-ewallet': 'Ví điện tử' };
 const overlayReturn = { 'delete-tx': 'edit-tx', 'wallet-delete': 'wallet-edit', 'category-delete': 'category-edit', 'budget-delete': 'budget-edit', 'wallet-picker': 'quick', 'history-filter': 'history' };
+const reviewScreens = [
+  ['profile-edit', 'Thông tin tài khoản', '', []],
+  ['avatar-preview', 'Ảnh đại diện', '', []],
+  ['quick', 'Thêm giao dịch', '', []],
+  ['help', 'Trợ giúp & Phản hồi', '', []],
+  ['about', 'Giới thiệu về ứng dụng', '', []],
+  ['notifications', 'Thông báo', '', []],
+  ['settings', 'Cài đặt', '', []]
+];
+const reviewGroups = [
+  ['Cá nhân và điều hướng', ['profile', 'profile-edit', 'home', 'history', 'budgets', 'quick']],
+  ['Các màn hình liên quan', ['wallets', 'categories', 'help', 'about', 'notifications', 'settings', 'login', 'avatar-preview']]
+];
+const reviewIcons = {
+  person: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 5 0 0 1 16 0v2"/>',
+  edit: '<path d="m4 16 12-12 4 4L8 20H4zM14 6l4 4"/>',
+  notifications: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>',
+  settings: '<path d="M10 3h4l1 3 3 1 2-1 2 4-2 2v2l2 2-2 4-3-1-2 1-1 2h-4l-1-2-2-1-3 1-2-4 2-2v-2l-2-2 2-4 2 1 3-1z"/><circle cx="12" cy="12" r="3"/>',
+  wallet: '<path d="M20 8V5H5a2 2 0 0 0 0 4h16v11H5a2 2 0 0 1-2-2V7M21 12h-6v4h6"/>',
+  category: '<path d="m7 3 5 8H2zM3 15h8v7H3z"/><circle cx="17.5" cy="17.5" r="4"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3h.01"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/>',
+  chevron: '<path d="m9 6 6 6-6 6"/>',
+  back: '<path d="m12 5-7 7 7 7M5 12h14"/>'
+};
 let step = 'Kiểm tra tệp và thư viện';
+
+const reviewNavName = 'Bottom Navigation Bar / 5 mục';
+const addTransactionLabel = 'Thêm giao dịch';
+const oldNavAudit = 'Nhãn trung tâm dùng AppTypography/captionLabel.';
+const newNavAudit = 'Nút trung tâm chỉ hiển thị biểu tượng +.';
+const fabName = /FloatingActionButton|Thêm giao dịch|Ghi giao dịch/i;
+
+function checkReviewNav(set) {
+  const labels = Object.keys(navigation);
+  if (set?.type !== 'COMPONENT_SET' || set.children.length !== labels.length) {
+    throw Error('Không tìm thấy đủ bốn biến thể thanh điều hướng trên trang bản duyệt.');
+  }
+  return labels.map(label => {
+    const variant = set.children.find(n => n.name === 'Selected=' + label);
+    const original = variant?.findChild(n => n.type === 'INSTANCE');
+    const fab = original?.findOne(n => fabName.test(n.name));
+    if (!fab || fab.width < 44 || fab.height < 44 ||
+        Math.abs(fab.absoluteTransform[0][2] + fab.width/2 -
+          variant.absoluteTransform[0][2] - variant.width/2) > 4) {
+      throw Error('Kiểm tra instance điều hướng và vị trí nút + của biến thể ' + label + '.');
+    }
+    if (original.findOne(n => n.type === 'TEXT' && n.visible && n.characters === addTransactionLabel)) {
+      throw Error('Instance gốc có nhãn Thêm giao dịch trong biến thể ' + label + '.');
+    }
+    return variant;
+  });
+}
+
+function styleLogout(button, vars) {
+  for (const key of ['expense', 'primaryMain', 'surface']) {
+    if (vars[key]?.resolvedType !== 'COLOR') throw Error('Thiếu biến màu ' + key);
+  }
+  const label = button.findOne(n => n.type === 'TEXT' && n.characters === 'Đăng xuất');
+  const isBackground = node => {
+    if (node.type === 'TEXT' || !node.visible || !Array.isArray(node.fills)) return false;
+    return node.fills.some(fill => fill.type === 'SOLID' && fill.visible !== false &&
+      ['primaryMain', 'expense'].some(key => {
+        const variable = vars[key];
+        if (fill.boundVariables?.color) return fill.boundVariables.color.id === variable.id;
+        const color = variable.resolveForConsumer(node).value;
+        return ['r', 'g', 'b'].every(channel => Math.abs(fill.color[channel] - color[channel]) < 0.005);
+      }));
+  };
+  const background = isBackground(button) ? button : button.findOne(isBackground);
+  if (!background || !label) throw Error('Không tìm thấy nền hoặc chữ của nút Đăng xuất.');
+  const bindFill = (node, variable) => {
+    const { r, g, b } = variable.resolveForConsumer(node).value;
+    node.fills = [figma.variables.setBoundVariableForPaint(
+      {type:'SOLID',color:{r,g,b}}, 'color', variable
+    )];
+  };
+  bindFill(background, vars.expense);
+  bindFill(label, vars.surface);
+}
+
+async function updateReviewPage(page) {
+  const set = page.findChild(n => n.name === reviewNavName);
+  const captions = checkReviewNav(set).flatMap(variant =>
+    variant.children.filter(n => n.type === 'TEXT' && n.characters === addTransactionLabel));
+  const audit = page.findChild(n => n.name === 'Kiểm kê và ghi chú duyệt');
+  const note = audit?.findOne(n => n.type === 'TEXT' && n.characters.includes(oldNavAudit));
+  if (note) {
+    const fonts = note.getRangeAllFontNames(0, note.characters.length);
+    await Promise.all(fonts.map(font => figma.loadFontAsync(font)));
+    const start = note.characters.indexOf(oldNavAudit);
+    note.insertCharacters(start, newNavAudit, 'AFTER');
+    note.deleteCharacters(start + newNavAudit.length,start + newNavAudit.length + oldNavAudit.length);
+  }
+  const profile = page.findChild(n => n.type === 'FRAME' && n.name === 'Cá nhân');
+  const logout = profile?.findChild(n => n.type === 'INSTANCE' && n.name === 'Đăng xuất');
+  if (!logout) throw Error('Không tìm thấy nút Đăng xuất trên màn hình Cá nhân.');
+  const vars = Object.fromEntries((await figma.variables.getLocalVariablesAsync()).map(v => [v.name, v]));
+  styleLogout(logout, vars);
+  captions.forEach(node => node.remove());
+  page.selection = [logout];
+  figma.viewport.scrollAndZoomIntoView([profile]);
+  figma.closePlugin('Đã cập nhật nút Đăng xuất và thanh điều hướng trên trang bản duyệt.');
+}
 
 async function build() {
   const existing = figma.root.children.find(p => p.name === pageName);
   if (existing) {
     await figma.setCurrentPageAsync(existing);
-    figma.closePlugin('Trang wireframe đã có trong tệp.');
+    if (profileReview) return updateReviewPage(existing);
+    figma.closePlugin('Trang đã có trong tệp.');
     return;
   }
 
@@ -112,6 +218,14 @@ async function build() {
   const required = ['primaryMain','primarySoft','background','surface','border','textPrimary','textMuted','income','incomeTextAA','expense','warning'];
   if (required.some(key => !vars[key])) throw Error('Thiếu biến màu trong tệp Our Budget.');
   if (['headingH1','headingH2','bodyRegular','bodyMedium','captionLabel','numericAmount','displayBalance'].some(key => !styles[key] || styles[key].fontName.family !== 'Inter')) throw Error('Thiếu kiểu chữ Inter trong tệp Our Budget.');
+  const library = profileReview ? await figma.getNodeByIdAsync('2:45') : null;
+  if (profileReview && library?.type !== 'PAGE') throw Error('Không tìm thấy trang Component Library.');
+  if (library) await library.loadAsync();
+  const localComponents = library?.findAllWithCriteria({ types: ['COMPONENT', 'COMPONENT_SET'] }) ?? [];
+  const lookup = names => {
+    const match = localComponents.find(n => names.includes(n.name.trim().toLowerCase()));
+    return match?.type === 'COMPONENT_SET' ? match.defaultVariant : match;
+  };
   const fonts = [...Object.values(styles).map(s => s.fontName)];
   for (const component of Object.values(source)) {
     for (const text of component.findAll(node => node.type === 'TEXT')) {
@@ -125,7 +239,7 @@ async function build() {
   try {
     await figma.setCurrentPageAsync(page);
     const destinations = {};
-    const screenGroups = detailed ? detailGroups : groups;
+    const screenGroups = profileReview ? reviewGroups : detailed ? detailGroups : groups;
     const screenIds = new Set(screenGroups.flatMap(([, ids]) => ids));
     const handlers = [];
     const textStyles = [];
@@ -171,7 +285,7 @@ async function build() {
       textStyles.push(n.setTextStyleIdAsync(styles[style].id).then(() => {
         solid(n, color);
         if (width) n.resize(width, n.height);
-        n.textAutoResize = width ? 'HEIGHT' : 'WIDTH_AND_HEIGHT';
+        n.textAutoResize = width || n.layoutSizingHorizontal === 'FILL' ? 'HEIGHT' : 'WIDTH_AND_HEIGHT';
       }));
       return n;
     };
@@ -321,6 +435,248 @@ async function build() {
       const n = place(frame,use(navigation[active]),0,H-88);
       for (const child of n.children) click(child, tabs[child.name] || (child.name.includes('FloatingActionButton') ? 'quick' : null));
     };
+    const reused = new Set();
+    const fallbacks = new Set();
+    const icon = (key, size = 24) => {
+      const component = lookup([key, 'icon/' + key, 'icons/' + key]);
+      if (component && component.width === 24 && component.height === 24) {
+        const instance = component.createInstance();
+        if (size !== 24) instance.rescale(size / 24);
+        reused.add(component.name);
+        return instance;
+      }
+      fallbacks.add('Icon · ' + key);
+      const node = figma.createNodeFromSvg(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size +
+        '" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        reviewIcons[key] + '</svg>'
+      );
+      node.name = 'Icon · ' + key;
+      for (const child of node.findAll(n => n.type === 'VECTOR')) child.strokes = [paint(child, 'textMuted')];
+      return node;
+    };
+    const actionIcon = (label, key, dst) => {
+      const node = stack(label, 48, [icon(key)], { horizontal:true, gap:0 });
+      node.resize(48,48);
+      node.layoutSizingVertical = 'FIXED';
+      node.primaryAxisAlignItems = 'CENTER';
+      return click(node, dst);
+    };
+    const fillWidth = node => { node.layoutSizingHorizontal = 'FILL'; return node; };
+    const profileHeader = (title, main, showBack) => {
+      const heading = t(title, 'headingH1');
+      const actions = main ? [
+        actionIcon('Thông báo', 'notifications', 'notifications'),
+        actionIcon('Cài đặt', 'settings', 'settings')
+      ] : [];
+      const node = stack('Thanh tiêu đề', contentWidth, [
+        ...(showBack ? [actionIcon('Quay lại', 'back', 'back')] : []), heading, ...actions
+      ], { horizontal:true, gap:4 });
+      fillWidth(heading);
+      return node;
+    };
+    const avatar = dst => {
+      const existing = lookup(['avatar', 'ảnh đại diện']);
+      const node = existing ? existing.createInstance() : solid(stack('Ảnh đại diện',64,[icon('person',32)],{gap:0}), 'primarySoft');
+      if (existing) reused.add(existing.name);
+      else {
+        fallbacks.add('Ảnh đại diện');
+        node.resize(64,64);
+        node.layoutSizingVertical = 'FIXED';
+        node.counterAxisAlignItems = 'CENTER';
+        node.primaryAxisAlignItems = 'CENTER';
+        radius(node,32,'radiusFull');
+      }
+      return stack('Ảnh đại diện và nút chỉnh sửa', null,
+        [node, actionIcon('Chỉnh ảnh đại diện', 'edit', dst)], {horizontal:true, gap:0});
+    };
+    const verified = () => {
+      const existing = lookup(['badge / verified','badge/verified','đã xác minh']);
+      if (existing?.findOne(n => n.type === 'TEXT' && n.characters === 'Đã xác minh')) {
+        reused.add(existing.name);
+        return existing.createInstance();
+      }
+      fallbacks.add('Nhãn xác minh');
+      return radius(solid(stack('Trạng thái email',null,[t('Đã xác minh','captionLabel','primaryMain')],
+        {horizontal:true,padding:[8,4]}),'primarySoft'),8,'radiusSmall');
+    };
+    const menuItems = [
+      ['Thông tin tài khoản','person','profile-edit'],
+      ['Quản lý ví','wallet','wallets'],
+      ['Danh mục','category','categories'],
+      ['Trợ giúp & Phản hồi','help','help'],
+      ['Giới thiệu về ứng dụng','info','about']
+    ];
+    let menuRow, menuLabel;
+    const reviewRow = (label, key) => {
+      if (!menuRow) {
+        menuRow = figma.createComponent();
+        menuRow.name = 'Profile / Menu Item';
+        const title = t('Thông tin tài khoản','bodyMedium');
+        const base = stack('Nội dung mục',contentWidth,[title,icon('chevron',20)],
+          {horizontal:true,padding:[12,12],gap:12});
+        base.paddingLeft = 48;
+        bind(base,'paddingLeft','AppSpacing/48');
+        fillWidth(title);
+        menuRow.layoutMode = 'VERTICAL';
+        menuRow.resize(contentWidth,48);
+        menuRow.counterAxisSizingMode = 'FIXED';
+        menuRow.primaryAxisSizingMode = 'AUTO';
+        menuRow.fills = [];
+        menuRow.appendChild(base);
+        fillWidth(base);
+        menuRow.x = 2800;
+        menuRow.y = 680;
+        menuLabel = menuRow.addComponentProperty('Nhãn','TEXT','Thông tin tài khoản');
+        title.componentPropertyReferences = {characters:menuLabel};
+      }
+      const row = menuRow.createInstance();
+      row.setProperties({[menuLabel]:label});
+      const wrapper = stack(label,contentWidth,[row],{gap:0});
+      fillWidth(row);
+      const leading = icon(key);
+      wrapper.appendChild(leading);
+      leading.layoutPositioning = 'ABSOLUTE';
+      leading.x = 12;
+      leading.y = 12;
+      return wrapper;
+    };
+    const menuGroup = (name, rows) => {
+      const children = rows.flatMap(([label,key,dst], i) => {
+        const existing = lookup([label.toLowerCase()]);
+        const useExisting = existing?.findOne(n => n.type === 'TEXT' && n.characters === label);
+        let row;
+        if (useExisting) {
+          reused.add(existing.name);
+          row = click(existing.createInstance(),dst);
+        } else {
+          fallbacks.add('Mục danh sách');
+          row = click(reviewRow(label,key),dst);
+        }
+        return [...(i ? [rect('Đường phân cách',contentWidth,1,'border')] : []),row];
+      });
+      const group = radius(outline(solid(stack(name, contentWidth, children,{gap:0}),'surface')),16,'radiusCard');
+      children.forEach(fillWidth);
+      return group;
+    };
+    const variantsByTab = {};
+    const navSlots = {};
+    let navHeight;
+    if (profileReview) {
+      step = 'Tạo biến thể thanh điều hướng';
+      const variants = Object.entries(navigation).map(([label,id]) => {
+        const variant = figma.createComponent();
+        variant.name = 'Selected=' + label;
+        const original = use(id);
+        reused.add(source[id].name);
+        const fab = original.findOne(n => fabName.test(n.name));
+        if (!fab) throw Error('Không tìm thấy nút thêm giao dịch trong ' + source[id].name);
+        const extra = 24;
+        variant.resize(W,original.height + extra);
+        variant.clipsContent = false;
+        navHeight = variant.height;
+        solid(variant,'surface');
+        original.resize(W,original.height);
+        place(variant,original,0,0);
+        original.constraints = {horizontal:'STRETCH',vertical:'MIN'};
+        const center = fab.absoluteTransform[0][2] - variant.absoluteTransform[0][2] + fab.width/2;
+        const top = fab.absoluteTransform[1][2] - variant.absoluteTransform[1][2];
+        if (Math.abs(center-W/2)>4 || fab.width<44 || fab.height<44) {
+          throw Error('Kiểm tra lại vị trí hoặc kích thước nút nổi trong ' + source[id].name);
+        }
+        navSlots[label] = {top};
+        variantsByTab[label] = variant;
+        return variant;
+      });
+      const set = figma.combineAsVariants(variants,page);
+      set.name = reviewNavName;
+      set.description = 'Bốn trạng thái đích từ Component Library. Hành động trung tâm mở Thêm giao dịch.';
+      variants.forEach((v,i) => { v.x = 16; v.y = 16 + i * (navHeight+16); });
+      set.resize(W+32,16+variants.length*(navHeight+16));
+      set.x = 2800;
+      set.y = 64;
+    }
+    const reviewNav = (frame, active) => {
+      const instance = variantsByTab[active].createInstance();
+      place(frame,instance,0,H-instance.height);
+      instance.constraints = {horizontal:'STRETCH',vertical:'MAX'};
+      const hitStrip = stack('Điểm chạm điều hướng',W,[],{horizontal:true,gap:0});
+      const start = Math.min(0,navSlots[active].top);
+      hitStrip.resize(W,instance.height-start);
+      hitStrip.primaryAxisSizingMode = 'FIXED';
+      hitStrip.counterAxisSizingMode = 'FIXED';
+      place(frame,hitStrip,0,instance.y+start);
+      hitStrip.constraints = {horizontal:'STRETCH',vertical:'MAX'};
+      const destinationsBySlot = [...Object.entries(tabs)];
+      destinationsBySlot.splice(2,0,[addTransactionLabel,'quick']);
+      for (const [label,dst] of destinationsBySlot) {
+        const target = figma.createFrame();
+        target.name = label;
+        target.fills = [];
+        hitStrip.appendChild(target);
+        fillWidth(target);
+        target.layoutSizingVertical = 'FILL';
+        click(target,dst);
+      }
+    };
+    const reviewContent = (frame, id, title, active, rows) => {
+      if (id === 'login') return drawContent(frame,[id,title,active,rows]);
+      const main = id === 'profile';
+      const headerNode = place(frame,profileHeader(title,main,!main && !active),16,24);
+      headerNode.constraints = {horizontal:'STRETCH',vertical:'MIN'};
+      let content = rows.map(row => render(row,id));
+      if (main) content = [
+        stack('Hồ sơ',contentWidth,[avatar('profile-edit'),
+          stack('Danh tính',null,[t('Minh Anh','headingH2'),t('minhanh@example.com','bodyRegular','textMuted'),verified()],{gap:4})
+        ],{horizontal:true,gap:8}),
+        menuGroup('Tài khoản và tài chính',menuItems.slice(0,3)),
+        menuGroup('Hỗ trợ và ứng dụng',menuItems.slice(3))
+      ];
+      if (id === 'profile-edit') content = [
+        avatar('avatar-preview'), verified(),
+        field('Họ và tên','Minh Anh'),
+        field('Email','minhanh@example.com'),
+        field('Số điện thoại','090 000 0000'),
+        button('Lưu thay đổi','profile')
+      ];
+      if (id === 'quick') {
+        const sheet = use(sheets.quick);
+        reused.add(source[sheets.quick].name);
+        content = [sheet];
+        click(part(sheet,'Lưu giao dịch'),'back');
+      }
+      if (id === 'avatar-preview') content = [
+        avatar(null),
+        t('Chọn ảnh đại diện','bodyMedium'),
+        button('Chọn ảnh','profile-edit')
+      ];
+      if (!content.length) content = [t('Màn hình tham chiếu trong prototype.','bodyRegular','textMuted',contentWidth)];
+      const footer = main ? button('Đăng xuất','login') : null;
+      const body = stack('Nội dung',contentWidth,content,{gap:12});
+      const top = 84;
+      const bottom = H - (active ? navHeight : 16) - (footer ? footer.height+24 : 0);
+      const scroll = figma.createFrame();
+      scroll.name = 'Vùng cuộn dọc';
+      scroll.resize(contentWidth,bottom-top);
+      scroll.fills = [];
+      scroll.clipsContent = true;
+      scroll.overflowDirection = 'VERTICAL';
+      place(frame,scroll,16,top);
+      scroll.constraints = {horizontal:'STRETCH',vertical:'STRETCH'};
+      place(scroll,body,0,0);
+      body.constraints = {horizontal:'STRETCH',vertical:'MIN'};
+      if (id === 'quick') {
+        const sheet = content[0];
+        if (sheet.width > contentWidth) sheet.rescale(contentWidth/sheet.width);
+      }
+      if (footer) {
+        footer.resize(contentWidth,footer.height);
+        place(frame,footer,16,bottom+12);
+        footer.constraints = {horizontal:'STRETCH',vertical:'MAX'};
+        styleLogout(footer, vars);
+      }
+      if (active) reviewNav(frame,active);
+    };
     const authTabs = current => stack('Chuyển chế độ tài khoản', contentWidth,
       [['login', 'Đăng nhập'], ['register', 'Đăng ký']].map(([id, label]) => {
         const selected = id === current;
@@ -366,7 +722,7 @@ async function build() {
       if (active) nav(frame,active);
       contentBounds.push([frame, content, H - (active ? 88 : 0)]);
     };
-    const byId = Object.fromEntries(SCREENS.map(s=>[s[0],s]));
+    const byId = Object.fromEntries((profileReview ? [...SCREENS,...reviewScreens] : SCREENS).map(s=>[s[0],s]));
     for (const [rowIndex, [heading, ids]] of screenGroups.entries()) {
       const label = t(heading,'headingH1');
       place(page,label,0,rowIndex * 960);
@@ -374,6 +730,10 @@ async function build() {
         step = 'Dựng màn hình ' + title;
         const frame = screen(title,page,col*430,rowIndex*960+64);
         destinations[id] = frame;
+        if (profileReview) {
+          reviewContent(frame,id,title,active,detailRows[id] ?? (id === 'profile' ? [] : rows));
+          continue;
+        }
         if (!kind) {
           drawContent(frame, detailed && detailRows[id] ? [id, title, active, detailRows[id]] : byId[id]);
           continue;
@@ -442,16 +802,64 @@ async function build() {
         : null;
       await node.setReactionsAsync([{trigger:{type:'ON_CLICK'},actions:[{type:'NODE',destinationId:next.id,navigation:'NAVIGATE',transition,preserveScrollPosition:false}]}]);
     }
+    if (profileReview) {
+      step = 'Kiểm tra bản duyệt';
+      checkReviewNav(variantsByTab['Cá nhân'].parent);
+      for (const [label,id] of Object.entries(tabs)) {
+        const frame = destinations[id];
+        const strip = frame.findChild(n => n.name === 'Điểm chạm điều hướng');
+        if (variantsByTab[label].parent.type !== 'COMPONENT_SET' ||
+            strip.children.length !== 5 || strip.children.some(n => n.width < 44 || n.height < 44) ||
+            strip.children.filter(n => n.reactions.length > 0).length !== 4) {
+          throw Error('Thiếu biến thể hoặc điểm chạm: ' + label);
+        }
+      }
+      const values = required.map(name => {
+        const {r,g,b} = vars[name].resolveForConsumer(destinations.profile).value;
+        return name + ' #' + [r,g,b].map(channel => Math.round(channel*255).toString(16).padStart(2,'0')).join('').toUpperCase();
+      });
+      const typography = Object.values(styles).map(s =>
+        [s.name,s.fontName.family,s.fontName.style,s.fontSize,
+          s.lineHeight.unit === 'AUTO' ? 'tự động' : s.lineHeight.value + ' ' + s.lineHeight.unit].join(' · '));
+      const effectStyles = await figma.getLocalEffectStylesAsync();
+      const rows = [
+        ['headingH1','Kiểm kê Design System'],
+        ['bodyRegular','Nguồn kiểm kê là biến, kiểu chữ và component trong tệp Figma tại lúc chạy.'],
+        ['headingH2','Màu ngữ nghĩa'],
+        ...values.map(value => ['bodyRegular',value]),
+        ['headingH2','Typography'],
+        ...typography.map(value => ['bodyRegular',value]),
+        ['headingH2','Khoảng cách, bo góc và lưới'],
+        ['bodyRegular',Object.keys(vars).filter(name => /^App(Spacing|Radius)\//.test(name)).join(', ') || 'Tệp không có biến AppSpacing/AppRadius.'],
+        ['bodyRegular','Khung 390 × 844. Lưới 4 cột, lề 16, gutter 12 theo plugin hiện có. Nội dung cuộn dọc và thanh điều hướng neo đáy.'],
+        ['bodyRegular','Kiểu hiệu ứng cục bộ ' + (effectStyles.map(s => s.name).join(', ') || 'không phát hiện') + '.'],
+        ['headingH2','Component và biến thể'],
+        ['bodyRegular','Dùng lại ' + [...new Set([...reused,source['4:146'].name,source['4:94'].name,source['4:101'].name,source['4:109'].name,source['4:119'].name,source['4:128'].name,source['4:137'].name])].join(', ') + '.'],
+        ['bodyRegular','Component Bottom Navigation Bar / 5 mục bọc bốn trạng thái điều hướng hiện có. Nút nổi giữ hiệu ứng và icon của nguồn. ' + newNavAudit],
+        ['bodyRegular','Thành phần dựng từ token cục bộ ' + ([...fallbacks].join(', ') || 'không có') + '. Các icon dựng mới là vector nét viền để duyệt.'],
+        ['bodyRegular','Mục menu dùng viền và đường phân cách từ border. Trạng thái tương tác được giữ trong instance gốc khi có. Thao tác prototype tại các khung mới là On click.'],
+        ['headingH2','Prototype'],
+        ['bodyRegular','Mở luồng Duyệt Cá nhân và thanh điều hướng. Có bốn tab, nút thêm giao dịch dẫn đến sheet hiện có và các liên kết từ menu Cá nhân.'],
+        ['bodyRegular','Cần duyệt bố cục, icon dự phòng và khác biệt với bản vẽ tay ở chế độ Present. Các khung phụ hỗ trợ, giới thiệu, thông báo và cài đặt chỉ dùng để thử điều hướng.']
+      ];
+      const audit = solid(stack('Kiểm kê và ghi chú duyệt',560,rows.map(([style,value]) => t(value,style,'textPrimary',528)),
+        {padding:[16,16],gap:8}),'surface');
+      place(page,audit,3500,64);
+      await Promise.all(textStyles);
+    }
     step = 'Thiết lập luồng prototype';
-    page.flowStartingPoints = [
+    page.flowStartingPoints = profileReview ? [
+      {nodeId:destinations.profile.id,name:'Duyệt Cá nhân và thanh điều hướng'}
+    ] : [
       {nodeId:destinations.login.id,name:'Tài khoản và đăng nhập'},
       {nodeId:destinations.home.id,name:'Ghi chép hằng ngày'}
     ];
     page.name = pageName;
-    const preview = [destinations.login, destinations.register];
+    const preview = profileReview ? [destinations.profile,destinations['profile-edit']] : [destinations.login, destinations.register];
     page.selection = preview;
     figma.viewport.scrollAndZoomIntoView(preview);
-    figma.closePlugin('Đã tạo ' + Object.keys(destinations).length + (detailed ? ' màn hình chính.' : ' wireframe có liên kết prototype.'));
+    figma.closePlugin(profileReview ? 'Đã tạo bản duyệt Cá nhân và thanh điều hướng.' :
+      'Đã tạo ' + Object.keys(destinations).length + (detailed ? ' màn hình chính.' : ' wireframe có liên kết prototype.'));
   } catch (error) {
     await figma.setCurrentPageAsync(figma.root.children.find(p => p.id !== page.id));
     page.remove();

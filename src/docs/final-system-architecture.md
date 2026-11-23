@@ -1,7 +1,7 @@
 # Kiến trúc hệ thống OurBudget
-Cập nhật triển khai 22/11/2026: ứng dụng hiện dùng Supabase PostgreSQL qua API PHP. Các mô tả MySQL phía dưới phản ánh báo cáo hoặc phương án ban đầu; xem [ghi chú chuyển đổi](supabase-migration.md) và [hướng dẫn Supabase](../../supabase/SUPABASE.md).
+Cập nhật triển khai 22/11/2026: ứng dụng hiện dùng Supabase PostgreSQL qua API PHP. Các mô tả MySQL phía dưới phản ánh báo cáo hoặc phương án ban đầu; xem [ghi chú chuyển đổi](supabase-migration.md) và [hướng dẫn Supabase](../supabase/SUPABASE.md).
 
-**Cập nhật 22/11/2026:** chỉ dùng bảng và thuộc tính trong Word, trừ ngoại lệ đã duyệt tại [chuyển CSDL sang Supabase PostgreSQL](../../supabase/SUPABASE.md). các migration PostgreSQL trong supabase/migrations là nguồn schema triển khai; chưa áp dụng CSDL cá nhân.
+**Cập nhật 22/11/2026:** chỉ dùng bảng và thuộc tính trong Word, trừ ngoại lệ đã duyệt tại [chuyển CSDL sang Supabase PostgreSQL](../supabase/SUPABASE.md). các migration PostgreSQL trong `src/supabase/migrations` là nguồn schema triển khai; chưa áp dụng CSDL cá nhân.
 
 Bản chốt thiết kế cho OurBudget trên Android. Phiên bản đầu bao phủ UC1–UC24, gồm tài khoản, nguồn tiền nhập thủ công, danh mục thu/chi, giao dịch, ngân sách và báo cáo. Ảnh hóa đơn thuộc hướng phát triển sau phiên bản đầu. Ví điện tử và tài khoản ngân hàng được theo dõi như nguồn tiền nhập thủ công, độc lập với hệ thống của tổ chức cung cấp dịch vụ.
 
@@ -85,4 +85,4 @@ Các ca nghiệm thu trọng tâm bao gồm cách ly hai tài khoản, thu hồi
 
 ## Ràng buộc dữ liệu hiện hành
 
-Không có transactions_type: xét ví đích trước dấu tiền; chuyển ví không tính vào thu/chi hoặc ngân sách. Các đề xuất khóa chống lặp, xóa mềm hoặc thuộc tính ngoài Word phải được duyệt riêng. Queue ghi sau commit, không nguyên tử với CSDL. Xem [chuẩn hóa](../../supabase/SUPABASE.md).
+Không có transactions_type: xét ví đích trước dấu tiền; chuyển ví không tính vào thu/chi hoặc ngân sách. Các đề xuất khóa chống lặp, xóa mềm hoặc thuộc tính ngoài Word phải được duyệt riêng. Queue ghi sau commit, không nguyên tử với CSDL. Xem [chuẩn hóa](../supabase/SUPABASE.md).

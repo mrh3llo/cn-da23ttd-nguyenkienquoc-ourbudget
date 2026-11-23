@@ -1,69 +1,167 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/network/api_client.dart';
 
-abstract interface class TokenStore {
-  Future<String?> read();
-  Future<void> write(String token);
-  Future<void> clear();
+const authRedirectUrl = 'com.ourbudget.ourbudget://auth-callback';
+
+enum AuthEvent { initialSession, signedIn, signedOut, tokenRefreshed, passwordRecovery, userUpdated }
+
+abstract interface class AuthGateway {
+  Stream<AuthEvent> get events;
+  Map<String, dynamic>? get currentUser;
+  String? get accessToken;
+  bool get hasSession;
+  Future<void> passwordLogin(String email, String password);
+  Future<bool> register(String name, String email, String password);
+  Future<bool> googleLogin();
+  Future<void> forgot(String email);
+  Future<void> reset(String password);
+  Future<void> resendVerification(String email);
+  Future<void> updateProfile(Map<String, dynamic> values);
+  Future<bool> linkGoogle();
+  Future<void> signOut();
 }
 
-class SecureTokenStore implements TokenStore {
-  final _storage = const FlutterSecureStorage();
-  static const _key = 'ourbudget_session';
+class SupabaseSecureLocalStorage extends LocalStorage {
+  SupabaseSecureLocalStorage({FlutterSecureStorage? storage})
+    : _storage = storage ?? const FlutterSecureStorage();
+
+  static const _key = 'ourbudget_supabase_session';
+  final FlutterSecureStorage _storage;
+  String? _session;
+
   @override
-  Future<String?> read() => _storage.read(key: _key);
+  Future<void> initialize() async => _session = await _storage.read(key: _key);
+
   @override
-  Future<void> write(String token) => _storage.write(key: _key, value: token);
+  Future<bool> hasAccessToken() async => _session != null;
+
   @override
-  Future<void> clear() => _storage.delete(key: _key);
+  Future<String?> accessToken() async => _session;
+
+  @override
+  Future<void> persistSession(String persistSessionString) async {
+    _session = persistSessionString;
+    await _storage.write(key: _key, value: persistSessionString);
+  }
+
+  @override
+  Future<void> removePersistedSession() async {
+    _session = null;
+    await _storage.delete(key: _key);
+  }
 }
 
-class AuthRepository {
-  AuthRepository(this.api);
+class AuthRepository implements AuthGateway {
+  AuthRepository(this.api, this.client);
+
   final ApiClient api;
-  Future<Map<String, dynamic>> request(
-    String method,
-    String path, {
-    Map<String, dynamic>? body,
-    bool authenticated = true,
-    String? token,
-  }) => api.send(
-    method,
-    path,
-    body: body,
-    authenticated: authenticated,
-    explicitToken: token,
-  );
-}
+  final SupabaseClient client;
 
-class GoogleLogin {
-  Future<void>? _initialized;
-  Future<String> token() async {
-    _initialized ??= GoogleSignIn.instance.initialize(
-      serverClientId: const String.fromEnvironment(
-        'GOOGLE_SERVER_CLIENT_ID',
-        defaultValue: '171608086306-eov7trctrio9s8jpof6g8bu2k8qemg4n.apps.googleusercontent.com',
+  @override
+  String? get accessToken => client.auth.currentSession?.accessToken;
+
+  @override
+  bool get hasSession => client.auth.currentSession != null;
+
+  @override
+  Map<String, dynamic>? get currentUser {
+    final user = client.auth.currentUser;
+    if (user == null) return null;
+    final metadata = user.userMetadata ?? const <String, dynamic>{};
+    final providers = user.identities?.map((identity) => identity.provider).toSet() ?? {};
+    return {
+      'id': user.id,
+      'name': metadata['full_name'] ?? metadata['name'] ?? user.email?.split('@').first ?? 'Người dùng',
+      'email': user.email ?? '',
+      'phone': metadata['phone'] ?? user.phone ?? '',
+      'avatar_url': metadata['avatar_url'] ?? '',
+      'email_verified': user.emailConfirmedAt != null,
+      'has_password': providers.contains('email'),
+      'google_linked': providers.contains('google'),
+    };
+  }
+
+  @override
+  Stream<AuthEvent> get events => client.auth.onAuthStateChange.map((state) {
+    final event = state.event;
+    if (event == AuthChangeEvent.signedIn) return AuthEvent.signedIn;
+    if (event == AuthChangeEvent.signedOut) return AuthEvent.signedOut;
+    if (event == AuthChangeEvent.tokenRefreshed) return AuthEvent.tokenRefreshed;
+    if (event == AuthChangeEvent.passwordRecovery) return AuthEvent.passwordRecovery;
+    if (event == AuthChangeEvent.initialSession) return AuthEvent.initialSession;
+    return AuthEvent.userUpdated;
+  });
+
+  @override
+  Future<void> passwordLogin(String email, String password) async {
+    await client.auth.signInWithPassword(email: email, password: password);
+  }
+
+  @override
+  Future<bool> register(String name, String email, String password) async {
+    final response = await client.auth.signUp(
+      email: email,
+      password: password,
+      emailRedirectTo: authRedirectUrl,
+      data: {'full_name': name},
+    );
+    return response.session != null;
+  }
+
+  @override
+  Future<bool> googleLogin() => client.auth.signInWithOAuth(
+    OAuthProvider.google,
+    redirectTo: authRedirectUrl,
+    authScreenLaunchMode: LaunchMode.externalApplication,
+  );
+
+  @override
+  Future<void> forgot(String email) => client.auth.resetPasswordForEmail(
+    email,
+    redirectTo: authRedirectUrl,
+  );
+
+  @override
+  Future<void> reset(String password) async {
+    await client.auth.updateUser(UserAttributes(password: password));
+  }
+
+  @override
+  Future<void> resendVerification(String email) => client.auth.resend(
+    type: OtpType.signup,
+    email: email,
+    emailRedirectTo: authRedirectUrl,
+  );
+
+  @override
+  Future<void> updateProfile(Map<String, dynamic> values) async {
+    final current = client.auth.currentUser;
+    if (current == null) throw const AuthException('Vui lòng đăng nhập lại.');
+    final metadata = <String, dynamic>{
+      ...?current.userMetadata,
+      'full_name': values['name'],
+      'phone': values['phone'],
+      'avatar_url': values['avatar_url'],
+    };
+    final email = values['email'] as String?;
+    await client.auth.updateUser(
+      UserAttributes(
+        email: email == current.email ? null : email,
+        data: metadata,
+        currentPassword: values['current_password'] as String?,
       ),
     );
-    await _initialized;
-    final account = await GoogleSignIn.instance.authenticate();
-    final token = account.authentication.idToken;
-    if (token == null) {
-      throw const ApiException(
-        401,
-        'google_token_missing',
-        'Google không trả mã đăng nhập.',
-      );
-    }
-    return token;
   }
 
-  Future<void> signOut() async {
-    if (_initialized != null) {
-      await _initialized;
-      await GoogleSignIn.instance.signOut();
-    }
-  }
+  @override
+  Future<bool> linkGoogle() => client.auth.linkIdentity(
+    OAuthProvider.google,
+    redirectTo: authRedirectUrl,
+    authScreenLaunchMode: LaunchMode.externalApplication,
+  );
+
+  @override
+  Future<void> signOut() => client.auth.signOut(scope: SignOutScope.local);
 }

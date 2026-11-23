@@ -10,9 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_secure_storage: ^11.2.0
-  google_sign_in: ^7.2.0
   material_ui: ^1.1.0
   provider: ^6.1.5+1
+  supabase_flutter: 2.18.3
   timezone: ^0.11.0
 
 dev_dependencies:

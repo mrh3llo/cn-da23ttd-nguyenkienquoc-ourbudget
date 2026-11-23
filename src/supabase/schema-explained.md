@@ -1,6 +1,6 @@
 # PostgreSQL schema
 
-The canonical DDL is in supabase/migrations/. It contains the seven report entities: users, wallet categories, wallets, income categories, outcome categories, transactions, and budgets. The existing custom PHP authentication remains in the users table; no Supabase Auth tables or new OurBudget entities are introduced.
+The canonical DDL is in `src/supabase/migrations/`. It contains the seven report entities: users, wallet categories, wallets, income categories, outcome categories, transactions, and budgets. The existing custom PHP authentication remains in the users table; no Supabase Auth tables or new OurBudget entities are introduced.
 
 PostgreSQL folds unquoted identifiers to lowercase. Accordingly, the report's users_phoneNumber is stored as users_phonenumber; PHP maps it to the same existing API field phone. IDs use identity columns, category IDs and their foreign keys use bigint, amounts use integer minor units, budget limits use numeric(19, 0), and 32-byte SHA-256 hashes use bytea.
 

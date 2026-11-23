@@ -29,6 +29,40 @@ class ApiClient {
     bool authenticated = true,
     String? explicitToken,
   }) async {
+    final json = await _send(
+      method,
+      path,
+      body: body,
+      authenticated: authenticated,
+      explicitToken: explicitToken,
+    );
+    return Map<String, dynamic>.from(json['data'] as Map);
+  }
+
+  Future<List<Map<String, dynamic>>> list(
+    String path, {
+    Map<String, String> query = const {},
+  }) async {
+    final rows = <Map<String, dynamic>>[];
+    for (var page = 1; ; page++) {
+      final json = await _send(
+        'GET',
+        path,
+        query: {...query, 'page': '$page', 'page_size': '100'},
+      );
+      rows.addAll((json['data'] as List).cast<Map<String, dynamic>>());
+      if (json['meta']['has_more'] != true) return rows;
+    }
+  }
+
+  Future<Map<String, dynamic>> _send(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+    bool authenticated = true,
+    String? explicitToken,
+    Map<String, String>? query,
+  }) async {
     final token =
         explicitToken ?? (authenticated ? sessionToken?.call() : null);
     final client = HttpClient()
@@ -36,7 +70,7 @@ class ApiClient {
     try {
       final request = await client.openUrl(
         method,
-        config.endpoint(path.split('/')),
+        config.endpoint(path.split('/')).replace(queryParameters: query),
       );
       request.headers.contentType = ContentType.json;
       if (token != null) {
@@ -65,7 +99,7 @@ class ApiClient {
           Map<String, dynamic>.from(error['fields'] as Map),
         );
       }
-      return Map<String, dynamic>.from(json['data'] as Map);
+      return json;
     } on ApiException {
       rethrow;
     } on Exception {

@@ -1,7 +1,7 @@
 # Lộ trình triển khai OurBudget cho Android
-Current implementation (2026-11-22): the PHP API uses Supabase PostgreSQL. Older MySQL references describe the thesis or original design. See [migration notes](supabase-migration.md) and [deployment instructions](../../supabase/SUPABASE.md).
+Current implementation (2026-11-22): the PHP API uses Supabase PostgreSQL. Older MySQL references describe the thesis or original design. See [migration notes](supabase-migration.md) and [deployment instructions](../supabase/SUPABASE.md).
 
-**Cập nhật 22/11/2026:** chỉ dùng bảng và thuộc tính trong Word, trừ ngoại lệ đã duyệt tại [hướng dẫn Supabase](../../supabase/SUPABASE.md). Các migration PostgreSQL trong supabase/migrations là nguồn schema triển khai; chưa áp dụng CSDL cá nhân.
+**Cập nhật 22/11/2026:** chỉ dùng bảng và thuộc tính trong Word, trừ ngoại lệ đã duyệt tại [hướng dẫn Supabase](../supabase/SUPABASE.md). Các migration PostgreSQL trong `src/supabase/migrations` là nguồn schema triển khai; chưa áp dụng CSDL cá nhân.
 
 Hiện trạng bắt đầu là cây thư mục `src/mobile/ourbudget/`. Mốc đầu tiên là chạy được ứng dụng Flutter trong Android Studio. Mốc chức năng đầu tiên là đăng nhập, tạo hoặc chọn ví, ghi một khoản thu/chi và thấy số dư cùng lịch sử cập nhật từ API. Sau đó mới hoàn thiện sửa/xóa, chuyển tiền, ngân sách và báo cáo. Kế hoạch bao gồm phần PHP/MySQL cần có để nghiệm thu ứng dụng với dữ liệu thật. [Cây thư mục Flutter](../mobile/ourbudget/README.md) · [Kiến trúc hệ thống](final-system-architecture.md) · [Kiến trúc Flutter](flutter-app-architecture.md) · [Use-case UC1–UC24](use-case-diagram.md) · [Luồng Figma](user-flow-our-budget.md)
 
@@ -40,7 +40,7 @@ Làm theo thứ tự trong bảng. Trong mỗi bước có tích hợp, xác đ�
 
 ## Bước 03. Chuẩn bị PHP/MySQL và hợp đồng dùng chung
 
-**Cập nhật 22/11/2026:** backend dùng Supabase PostgreSQL qua API PHP. Schema bảy thực thể nằm trong các migration tại supabase/migrations; chưa chuyển dữ liệu từ MySQL. Xem [ghi chú chuyển đổi](supabase-migration.md) và [hướng dẫn triển khai](../../supabase/SUPABASE.md).
+**Cập nhật 22/11/2026:** backend dùng Supabase PostgreSQL qua API PHP. Schema bảy thực thể nằm trong các migration tại `src/supabase/migrations`; chưa chuyển dữ liệu từ MySQL. Xem [ghi chú chuyển đổi](supabase-migration.md) và [hướng dẫn triển khai](../supabase/SUPABASE.md).
 
 
 1. Kiểm tra nơi đặt mã PHP, môi trường chạy, MySQL và cách cung cấp cấu hình phát triển. Kiểm tra đích PowerDesigner trước khi sinh SQL vì PDM hiện đặt SAP SQL Anywhere 17. Đối chiếu ERD và PDM với kiến trúc đích MySQL InnoDB, sau đó dùng migration hoặc DDL đã kiểm tra trên cơ sở dữ liệu phát triển. Cơ sở dữ liệu này cần dựng lại được từ schema và dữ liệu mẫu.
@@ -136,4 +136,4 @@ Dùng mailbox thử có kiểm soát khi nghiệm thu email. Đăng ký tự c�
 
 ## Ràng buộc dữ liệu hiện hành
 
-Không có transactions_type: xét ví đích trước dấu tiền; chuyển ví không tính vào thu/chi hoặc ngân sách. Các đề xuất khóa chống lặp, xóa mềm hoặc thuộc tính ngoài Word phải được duyệt riêng. Queue ghi sau commit, không nguyên tử với CSDL. Xem [chuẩn hóa](../../supabase/SUPABASE.md).
+Không có transactions_type: xét ví đích trước dấu tiền; chuyển ví không tính vào thu/chi hoặc ngân sách. Các đề xuất khóa chống lặp, xóa mềm hoặc thuộc tính ngoài Word phải được duyệt riêng. Queue ghi sau commit, không nguyên tử với CSDL. Xem [chuẩn hóa](../supabase/SUPABASE.md).

@@ -9,9 +9,14 @@ import '../data/transaction_repository.dart';
 import 'ledger_view_model.dart';
 
 class QuickTransactionBottomSheet extends StatefulWidget {
-  const QuickTransactionBottomSheet({super.key, required this.wallets});
+  const QuickTransactionBottomSheet({
+    super.key,
+    required this.wallets,
+    this.pickCategory,
+  });
 
   final List<Wallet> wallets;
+  final Future<String?> Function(TransactionKind)? pickCategory;
 
   @override
   State<QuickTransactionBottomSheet> createState() =>
@@ -73,7 +78,9 @@ class _QuickTransactionBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-    final saving = context.select((LedgerViewModel model) => model.saving);
+    final preview = widget.pickCategory != null;
+    final saving =
+        !preview && context.select((LedgerViewModel model) => model.saving);
     final categories = _kind == TransactionKind.expense
         ? expenseCategories
         : incomeCategories;
@@ -182,80 +189,94 @@ class _QuickTransactionBottomSheetState
                   ),
                   const SizedBox(height: 12),
                   const Text('Danh mục'),
-                  FormField<String>(
-                    key: ValueKey(_kind),
-                    initialValue: _category,
-                    validator: (value) =>
-                        value == null ? 'Hãy chọn danh mục.' : null,
-                    builder: (field) => LayoutBuilder(
-                      builder: (context, constraints) {
-                        final scale =
-                            MediaQuery.textScalerOf(context).scale(14) / 14;
-                        final columns =
-                            constraints.maxWidth >= 320 && scale <= 1.3 ? 4 : 2;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Wrap(
-                              spacing: 4,
-                              runSpacing: 4,
-                              children: [
-                                for (final category in categories)
-                                  SizedBox(
-                                    width:
-                                        (constraints.maxWidth -
-                                                4 * (columns - 1)) /
-                                            columns -
-                                        0.1,
-                                    child: FilterChip(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                      ),
-                                      labelPadding: const EdgeInsets.symmetric(
-                                        horizontal: 2,
-                                      ),
-                                      label: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            categoryIcon(category),
-                                            size: 18,
-                                            color: primary,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            category,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      selected: _category == category,
-                                      showCheckmark: false,
-                                      onSelected: saving
-                                          ? null
-                                          : (_) {
-                                              field.didChange(category);
-                                              setState(
-                                                () => _category = category,
-                                              );
-                                            },
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            if (field.errorText case final error?)
-                              Text(
-                                error,
-                                style: const TextStyle(color: expense),
-                              ),
-                          ],
-                        );
+                  if (preview)
+                    OutlinedButton(
+                      onPressed: () async {
+                        final selected = await widget.pickCategory!(_kind);
+                        if (mounted && selected != null) {
+                          setState(() => _category = selected);
+                        }
                       },
+                      child: Text(_category ?? 'Chọn danh mục'),
+                    )
+                  else
+                    FormField<String>(
+                      key: ValueKey(_kind),
+                      initialValue: _category,
+                      validator: (value) =>
+                          value == null ? 'Hãy chọn danh mục.' : null,
+                      builder: (field) => LayoutBuilder(
+                        builder: (context, constraints) {
+                          final scale =
+                              MediaQuery.textScalerOf(context).scale(14) / 14;
+                          final columns =
+                              constraints.maxWidth >= 320 && scale <= 1.3
+                              ? 4
+                              : 2;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                spacing: 4,
+                                runSpacing: 4,
+                                children: [
+                                  for (final category in categories)
+                                    SizedBox(
+                                      width:
+                                          (constraints.maxWidth -
+                                                  4 * (columns - 1)) /
+                                              columns -
+                                          0.1,
+                                      child: FilterChip(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 8,
+                                        ),
+                                        labelPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 2,
+                                            ),
+                                        label: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              categoryIcon(category),
+                                              size: 18,
+                                              color: primary,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              category,
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        selected: _category == category,
+                                        showCheckmark: false,
+                                        onSelected: saving
+                                            ? null
+                                            : (_) {
+                                                field.didChange(category);
+                                                setState(
+                                                  () => _category = category,
+                                                );
+                                              },
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              if (field.errorText case final error?)
+                                Text(
+                                  error,
+                                  style: const TextStyle(color: expense),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _walletId,
@@ -311,9 +332,11 @@ class _QuickTransactionBottomSheetState
                     style: FilledButton.styleFrom(
                       minimumSize: const Size(0, 48),
                     ),
-                    onPressed: saving ? null : _save,
+                    onPressed: saving || preview ? null : _save,
                     child: Text(saving ? 'Đang lưu…' : 'Lưu giao dịch'),
                   ),
+                  if (preview)
+                    const Text('Chức năng lưu giao dịch sẽ được mở ở Bước 6.'),
                 ],
               ),
             ),

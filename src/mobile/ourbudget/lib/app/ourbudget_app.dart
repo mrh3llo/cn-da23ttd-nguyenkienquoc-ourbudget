@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/config/api_config.dart';
 import '../core/network/api_client.dart';
@@ -29,14 +30,15 @@ class OurBudgetApp extends StatelessWidget {
       return DemoOurBudgetApp(createRepository: createRepository);
     }
     return ChangeNotifierProvider(
-      create: (_) =>
-          (authController ??
-                AuthController(
-                  AuthRepository(ApiClient(const ApiConfig())),
-                  SecureTokenStore(),
-                  GoogleLogin(),
-                ))
-            ..restore(),
+      create: (_) {
+        final api = ApiClient(const ApiConfig());
+        return (authController ??
+              AuthController(
+                AuthRepository(api, Supabase.instance.client),
+                api,
+              ))
+          ..restore();
+      },
       child: const _AuthenticatedApp(),
     );
   }
@@ -87,6 +89,7 @@ class _AuthenticatedApp extends StatelessWidget {
         SessionState.signedIn => MainNavigationShell(
           key: ValueKey(auth.user!['id']),
           transactionsEnabled: false,
+          profileActions: ProfilePage.headerActions,
           home: (_, _) => const _ComingSoon(),
           pages: const [_ComingSoon(), _ComingSoon(), ProfilePage()],
         ),

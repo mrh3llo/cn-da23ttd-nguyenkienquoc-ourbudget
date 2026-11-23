@@ -7,7 +7,7 @@ $settings = config();
 if (!preg_match('/^[a-zA-Z0-9_]+_test$/D',$settings['db_name'])) throw new RuntimeException('Use disposable _test database');
 $pdo=database($settings);
 if ((int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('users','wallet_categories','wallets','income_categories','outcome_categories','transactions','budgets')")->fetchColumn() !== 0) throw new RuntimeException('Use database without OurBudget tables');
-foreach (glob(dirname(__DIR__,3).'/supabase/migrations/*.sql') as $file) $pdo->exec(file_get_contents($file));
+foreach (glob(dirname(__DIR__,2).'/supabase/migrations/*.sql') as $file) $pdo->exec(file_get_contents($file));
 $passed=0;
 function checkAuth(bool $value,string $name): void {
     global $passed;

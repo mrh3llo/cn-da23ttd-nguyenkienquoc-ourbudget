@@ -21,7 +21,7 @@ Các bảng kỹ thuật trước đây (`auth_sessions`, `password_resets`, `id
 | Thời gian | DATETIME theo Asia/Ho_Chi_Minh; API ISO 8601 có offset |
 | Đích PDM SQL Anywhere 17 | Triển khai dùng MySQL 8.0.16+ và InnoDB; phải đổi đích trước khi sinh SQL từ PowerDesigner |
 
-Trong `users`, bổ sung `users_avatar_url`, `users_updated_at`, `users_verified_at`, `user_google_sub`, `users_sessions_hash`, `users_sessions_expires_at`, `users_verification_hash`, `users_verification_experes_at`, `users_reset_hash`, `users_reset_expires_at` và `users_welcomed_at` nếu bảng thuộc tính trong Word chưa có. Định danh Google là chuỗi so sánh chính xác và duy nhất. Ba loại mã phiên/xác minh/khôi phục được băm SHA-256 thành BINARY(32), có cột thời hạn riêng; không dùng thay thế lẫn nhau. Mã dùng xong được xóa. Các cột đầy đủ, khóa và quan hệ được ghi trong [schema metadata](../../supabase/model-reference.md).
+Trong `users`, bổ sung `users_avatar_url`, `users_updated_at`, `users_verified_at`, `user_google_sub`, `users_sessions_hash`, `users_sessions_expires_at`, `users_verification_hash`, `users_verification_experes_at`, `users_reset_hash`, `users_reset_expires_at` và `users_welcomed_at` nếu bảng thuộc tính trong Word chưa có. Định danh Google là chuỗi so sánh chính xác và duy nhất. Ba loại mã phiên/xác minh/khôi phục được băm SHA-256 thành BINARY(32), có cột thời hạn riêng; không dùng thay thế lẫn nhau. Mã dùng xong được xóa. Các cột đầy đủ, khóa và quan hệ được ghi trong [schema metadata](../supabase/model-reference.md).
 
 ## Đoạn văn kiến trúc có thể đưa vào báo cáo
 

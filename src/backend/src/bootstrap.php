@@ -5,6 +5,7 @@ date_default_timezone_set('Asia/Ho_Chi_Minh');
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 require_once __DIR__ . '/ApiError.php';
 require_once __DIR__ . '/GoogleIdentity.php';
+require_once __DIR__ . '/SupabaseIdentity.php';
 require_once __DIR__ . '/AuthService.php';
 require_once __DIR__ . '/Http.php';
 require_once __DIR__ . '/MailQueue.php';

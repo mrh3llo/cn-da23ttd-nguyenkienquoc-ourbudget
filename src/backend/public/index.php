@@ -3,9 +3,12 @@ declare(strict_types=1);
 
 ini_set('display_errors', '0');
 require dirname(__DIR__) . '/src/bootstrap.php';
+require dirname(__DIR__) . '/src/FinanceDirectory.php';
 $requestId = bin2hex(random_bytes(16));
 $routes = [
     '/api/v1/health' => ['GET'], '/api/v1/me' => ['GET','PATCH'],
+    '/api/v1/wallets' => ['GET','POST'], '/api/v1/categories' => ['GET','POST'],
+    '/api/v1/wallet-categories' => ['GET'],
     '/api/v1/auth/register' => ['POST'], '/api/v1/auth/login' => ['POST'],
     '/api/v1/auth/google' => ['POST'], '/api/v1/auth/google/link' => ['POST'],
     '/api/v1/auth/logout' => ['POST'], '/api/v1/auth/forgot-password' => ['POST'],
@@ -33,7 +36,7 @@ if (array_diff($expected,$tables) || (int)$version !== 1 || $legacyType !== 0) t
         throw new ApiError(503,'service_unavailable','Dịch vụ tạm thời chưa sẵn sàng.');
     }
     if ($path === '/api/v1/health') Http::send(200,Http::success(['status'=>'ok','database'=>'ok','schema'=>'report-standardized-sign-amount'],$requestId));
-    $auth = new AuthService($pdo,new GoogleIdentity($settings['google_server_client_id']));
+ $auth = new AuthService($pdo,new GoogleIdentity($settings['google_server_client_id']),new SupabaseIdentity($settings['supabase_url'],$settings['supabase_publishable_key']));
     $auth->rateLimit('ip:'.($_SERVER['REMOTE_ADDR'] ?? 'unknown'),120);
     $input = [];
     if ($method !== 'GET') {
@@ -50,12 +53,29 @@ if (array_diff($expected,$tables) || (int)$version !== 1 || $legacyType !== 0) t
     $user = null;
     if (!in_array($path,$public,true)) {
         $header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-        if (!preg_match('/^Bearer ([a-f0-9]{64})$/D',$header,$match)) throw new ApiError(401,'unauthenticated','Vui lòng đăng nhập.');
+ if (!preg_match('/^Bearer ([A-Za-z0-9._~-]{20,8192})$/D',$header,$match)) throw new ApiError(401,'unauthenticated','Vui lòng đăng nhập.');
         $user = $auth->authenticate($match[1]);
     }
     if ($method !== 'GET') {
         $identity = $user ? (string)$user['users_id'] : strtolower(is_string($input['email'] ?? null) ? trim($input['email']) : ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
         $auth->rateLimit($path.':'.$identity, in_array($path,['/api/v1/auth/register','/api/v1/auth/forgot-password','/api/v1/auth/resend-verification'],true) ? 5 : 10);
+    }
+    if (in_array($path, ['/api/v1/wallets','/api/v1/categories','/api/v1/wallet-categories'], true)) {
+        $directory = new FinanceDirectory($pdo);
+        $userId = (int)$user['users_id'];
+        if ($path === '/api/v1/wallet-categories') {
+            Http::send(200, Http::success($directory->walletTypes(), $requestId));
+        }
+        if ($method === 'POST') {
+            $created = $path === '/api/v1/wallets'
+                ? $directory->createWallet($userId, $input)
+                : $directory->createCategory($userId, $input);
+            Http::send(201, Http::success($created, $requestId));
+        }
+        [$rows, $meta] = $path === '/api/v1/wallets'
+            ? $directory->wallets($userId, $_GET)
+            : $directory->categories($userId, $_GET);
+        Http::send(200, Http::success($rows, $requestId, $meta));
     }
     $result = match ($path) {
         '/api/v1/auth/register' => $auth->register($input),

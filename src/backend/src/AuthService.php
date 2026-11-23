@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class AuthService
 {
     private array $mail=[];
-    public function __construct(private PDO $pdo,private GoogleIdentity $google) {}
+    public function __construct(private PDO $pdo, private GoogleIdentity $google, private ?SupabaseIdentity $supabase = null) {}
 
     public static function text(array $input,string $field,int $max,bool $required=true): string
     {
@@ -72,9 +72,18 @@ final class AuthService
     }
     public function authenticate(string $token): array
     {
-        if (!preg_match('/^[a-f0-9]{64}$/D',$token)) throw new ApiError(401,'unauthenticated','Phiên không hợp lệ.');
-        $q=$this->pdo->prepare("SELECT *,encode(users_sessions_hash,'hex') AS users_sessions_hash_hex FROM users WHERE users_sessions_hash=decode(?,'hex') AND users_sessions_expires_at>CURRENT_TIMESTAMP AND users_is_active=1");$q->execute([hash('sha256',$token)]);
-        return $q->fetch() ?: throw new ApiError(401,'unauthenticated','Phiên hết hạn, đã đăng xuất hoặc được thay thế bởi lần đăng nhập mới.');
+        if (preg_match('/^[a-f0-9]{64}$/D', $token)) {
+            $q=$this->pdo->prepare("SELECT *,encode(users_sessions_hash,'hex') AS users_sessions_hash_hex FROM users WHERE users_sessions_hash=decode(?,'hex') AND users_sessions_expires_at>CURRENT_TIMESTAMP AND users_is_active=1");$q->execute([hash('sha256',$token)]);
+            return $q->fetch() ?: throw new ApiError(401,'unauthenticated','Phiên hết hạn, đã đăng xuất hoặc được thay thế bởi lần đăng nhập mới.');
+        }
+
+        if ($this->supabase === null) throw new ApiError(401,'unauthenticated','Phiên Supabase không được hỗ trợ.');
+        $identity = $this->supabase->verify($token);
+        if (empty($identity['email_confirmed_at'])) throw new ApiError(403,'email_unverified','Hãy xác minh email trước khi sử dụng ứng dụng.');
+        $q=$this->pdo->prepare('SELECT users_id FROM users WHERE users_supabase_uid=? AND users_is_active=1');$q->execute([$identity['id']]);
+        $id=$q->fetchColumn();
+        if ($id===false) throw new ApiError(401,'profile_not_synced','Hồ sơ người dùng chưa được đồng bộ.');
+        return $this->user((int)$id);
     }
     private function verification(array $user): void
     {

@@ -35,5 +35,10 @@ function databaseEnvironment(array $settings, array $file): array
         if ($value !== false) $settings[$setting] = $value;
         elseif (array_key_exists($key, $file)) $settings[$setting] = $file[$key];
     }
+    foreach (['SUPABASE_URL'=>'supabase_url', 'SUPABASE_PUBLISHABLE_KEY'=>'supabase_publishable_key'] as $key=>$setting) {
+        $value = getenv($key);
+        if ($value !== false) $settings[$setting] = $value;
+        elseif (array_key_exists($key, $file)) $settings[$setting] = $file[$key];
+    }
     return $settings;
 }

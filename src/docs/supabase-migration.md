@@ -5,7 +5,7 @@ do Supabase quản lý. Ứng dụng Flutter vẫn gọi API PHP; xác thực t�
 Provider và hợp đồng REST được giữ nguyên. Không thay bằng Supabase Auth và
 không đưa khóa bí mật hoặc thông tin kết nối CSDL vào ứng dụng di động.
 
-Schema PostgreSQL trong supabase/migrations/ giữ bảy thực thể được mô tả
+Schema PostgreSQL trong `src/supabase/migrations/` giữ bảy thực thể được mô tả
 trong báo cáo. Các khóa chính và khóa ngoại danh mục dùng bigint; khóa ví và
 giao dịch dùng integer; số dư và giao dịch dùng số nguyên có dấu; hạn mức
 ngân sách dùng numeric(19,0). Khóa băm SHA-256 được lưu dưới dạng bytea với
@@ -31,6 +31,6 @@ giá trị BINARY(32) sang bytea, nhập theo thứ tự khóa ngoại, kiểm t
 và chuyển endpoint cần thực hiện trước khi cắt chuyển thực tế.
 
 Hướng dẫn chạy migration và cấu hình backend nằm tại
-../../supabase/SUPABASE.md. Kết nối trực tiếp Supabase cần mạng IPv6 hoặc add-on
+../supabase/SUPABASE.md. Kết nối trực tiếp Supabase cần mạng IPv6 hoặc add-on
 IPv4; backend chỉ IPv4 cần dùng session pooler. Đây là chế độ tương thích với
 kết nối PDO tồn tại và prepared statements.

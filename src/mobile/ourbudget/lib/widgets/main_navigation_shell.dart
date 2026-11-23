@@ -2,6 +2,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../design_system/app_theme.dart';
+import '../core/network/api_client.dart';
+import '../features/auth/presentation/auth_controller.dart';
+import '../features/finance/presentation/finance_directory_page.dart';
+import '../features/transactions/data/transaction_repository.dart';
 import '../features/transactions/presentation/ledger_view_model.dart';
 import '../features/transactions/presentation/quick_transaction_bottom_sheet.dart';
 
@@ -11,10 +15,12 @@ class MainNavigationShell extends StatefulWidget {
     required this.pages,
     required this.home,
     this.transactionsEnabled = true,
+    this.profileActions,
   });
 
   final List<Widget> pages;
   final bool transactionsEnabled;
+  final List<Widget> Function(BuildContext)? profileActions;
   final Widget Function(VoidCallback showHistory, VoidCallback showBudget) home;
 
   @override
@@ -30,10 +36,15 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     Icons.person_outline,
   ];
   var _index = 0;
+  var _loadingWallets = false;
 
   void _select(int index) => setState(() => _index = index);
 
   Future<void> _openTransaction() async {
+    if (!widget.transactionsEnabled) {
+      await _openTransactionPreview();
+      return;
+    }
     final model = context.read<LedgerViewModel>();
     final wallets = model.ledger?.wallets;
     if (wallets == null || wallets.isEmpty) {
@@ -69,6 +80,66 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     }
   }
 
+  Future<void> _openTransactionPreview() async {
+    if (_loadingWallets) return;
+    setState(() => _loadingWallets = true);
+    try {
+      final items = await context.read<AuthController>().api.list('wallets');
+      if (!mounted) return;
+      final wallets = [
+        for (final item in items)
+          if (item['is_active'] == true)
+            Wallet(
+              item['id'] as String,
+              item['name'] as String,
+              BigInt.parse(item['current_balance'] as String),
+              isDefault: item['priority'] == 0,
+            ),
+      ];
+      if (wallets.isEmpty) {
+        await Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (_) => const FinanceDirectoryPage(wallets: true),
+          ),
+        );
+        return;
+      }
+      await showModalBottomSheet<void>(
+        context: context,
+        useSafeArea: true,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(sheetRadius),
+          ),
+        ),
+        builder: (sheetContext) => QuickTransactionBottomSheet(
+          wallets: wallets,
+          pickCategory: (kind) => Navigator.of(sheetContext).push<String>(
+            MaterialPageRoute(
+              builder: (_) => FinanceDirectoryPage(
+                pickType: kind == TransactionKind.income ? 'income' : 'expense',
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error is ApiException
+                ? error.message
+                : 'Không tải được nguồn tiền.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _loadingWallets = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: _index == 0,
@@ -76,7 +147,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       if (!popped) _select(0);
     },
     child: Scaffold(
-      appBar: AppBar(title: Text(_labels[_index])),
+      appBar: AppBar(
+        title: Text(_labels[_index]),
+        actions: _index == 3 ? widget.profileActions?.call(context) : null,
+      ),
       body: IndexedStack(
         index: _index,
         children: [
@@ -84,16 +158,14 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           ...widget.pages,
         ],
       ),
-      floatingActionButton: widget.transactionsEnabled
-          ? FloatingActionButton(
-              tooltip: 'Ghi giao dịch',
-              backgroundColor: primary,
-              foregroundColor: Colors.white,
-              shape: const CircleBorder(),
-              onPressed: _openTransaction,
-              child: const Icon(Icons.add),
-            )
-          : null,
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Ghi giao dịch',
+        backgroundColor: primary,
+        foregroundColor: Colors.white,
+        shape: const CircleBorder(),
+        onPressed: _loadingWallets ? null : _openTransaction,
+        child: const Icon(Icons.add),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         color: Colors.white,
