@@ -12,7 +12,10 @@ Future<void> main() async {
     ),
     publishableKey: const String.fromEnvironment(
       'SUPABASE_PUBLISHABLE_KEY',
-      defaultValue: 'sb_publishable_N2yyWbxreoGiyOei17GKvw_GXXzN0Ai',
+      defaultValue: String.fromEnvironment(
+        'SUPABASE_ANON_KEY',
+        defaultValue: 'sb_publishable_N2yyWbxreoGiyOei17GKvw_GXXzN0Ai',
+      ),
     ),
     authOptions: FlutterAuthClientOptions(
       authFlowType: AuthFlowType.pkce,

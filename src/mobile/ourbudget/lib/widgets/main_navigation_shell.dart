@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -141,50 +143,57 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: _index == 0,
-    onPopInvokedWithResult: (popped, _) {
-      if (!popped) _select(0);
-    },
-    child: Scaffold(
-      appBar: AppBar(
-        title: Text(_labels[_index]),
-        actions: _index == 3 ? widget.profileActions?.call(context) : null,
-      ),
-      body: IndexedStack(
-        index: _index,
-        children: [
-          widget.home(() => _select(1), () => _select(2)),
-          ...widget.pages,
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Ghi giao dịch',
-        backgroundColor: primary,
-        foregroundColor: Colors.white,
-        shape: const CircleBorder(),
-        onPressed: _loadingWallets ? null : _openTransaction,
-        child: const Icon(Icons.add),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        color: Colors.white,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 4,
-        height: 72,
-        padding: EdgeInsets.zero,
-        child: Row(
+  Widget build(BuildContext context) {
+    final safeArea = MediaQuery.paddingOf(context);
+    return PopScope(
+      canPop: _index == 0,
+      onPopInvokedWithResult: (popped, _) {
+        if (!popped) _select(0);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_labels[_index]),
+          actions: _index == 3 ? widget.profileActions?.call(context) : null,
+        ),
+        body: IndexedStack(
+          index: _index,
           children: [
-            _destination(0),
-            _destination(1),
-            const SizedBox(width: 64),
-            _destination(2),
-            _destination(3),
+            widget.home(() => _select(1), () => _select(2)),
+            ...widget.pages,
           ],
         ),
+        bottomNavigationBar: BottomAppBar(
+          color: Colors.white,
+          height: 72,
+          padding: EdgeInsets.only(
+            left: math.max(0.0, safeArea.right - safeArea.left),
+            right: math.max(0.0, safeArea.left - safeArea.right),
+          ),
+          child: Row(
+            children: [
+              _destination(0),
+              _destination(1),
+              SizedBox(
+                width: 64,
+                child: Center(
+                  child: FloatingActionButton(
+                    tooltip: 'Ghi giao dịch',
+                    backgroundColor: primary,
+                    foregroundColor: Colors.white,
+                    shape: const CircleBorder(),
+                    onPressed: _loadingWallets ? null : _openTransaction,
+                    child: const Icon(Icons.add),
+                  ),
+                ),
+              ),
+              _destination(2),
+              _destination(3),
+            ],
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _destination(int index) => Expanded(
     child: Semantics(

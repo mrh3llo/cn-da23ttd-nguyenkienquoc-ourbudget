@@ -1,3 +1,6 @@
+import java.net.URI
+import java.util.Base64
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -46,4 +49,39 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+val dartDefines = providers.gradleProperty("dart-defines").orElse("")
+val checkReleaseEndpoints by tasks.registering {
+    inputs.property("dartDefines", dartDefines)
+    doLast {
+        val defines = dartDefines.get().split(',').filter { it.isNotEmpty() }.associate {
+            val entry = String(Base64.getDecoder().decode(it), Charsets.UTF_8)
+            entry.substringBefore('=') to entry.substringAfter('=', "")
+        }
+        val api = runCatching { URI(defines["API_BASE_URL"].orEmpty()) }.getOrNull()
+        val host = api?.host?.lowercase()?.trimEnd('.').orEmpty()
+        require(api?.scheme == "https" && host.isNotEmpty() &&
+            host !in setOf("localhost", "10.0.2.2", "10.0.3.2", "[::1]", "0.0.0.0") &&
+            !host.startsWith("127.") && !host.endsWith(".localhost") &&
+            !host.endsWith(".supabase.co") && api.rawUserInfo == null &&
+            api.rawQuery == null && api.rawFragment == null && api.rawPath in listOf("", "/")) {
+            "OurBudget release requires --dart-define=API_BASE_URL=<HTTPS origin of the PHP backend>."
+        }
+        defines["SUPABASE_URL"]?.let { value ->
+            val url = runCatching { URI(value) }.getOrNull()
+            require(url?.scheme == "https" && !url.host.isNullOrEmpty()) {
+                "SUPABASE_URL must be an HTTPS URL."
+            }
+        }
+        (defines["SUPABASE_PUBLISHABLE_KEY"] ?: defines["SUPABASE_ANON_KEY"])?.let { key ->
+            require(key.isNotBlank() && !key.startsWith("sb_secret_")) {
+                "Provide a non-empty Supabase publishable or legacy anon key."
+            }
+        }
+    }
+}
+
+tasks.matching { it.name == "preReleaseBuild" || it.name == "compileFlutterBuildRelease" }.configureEach {
+    dependsOn(checkReleaseEndpoints)
 }

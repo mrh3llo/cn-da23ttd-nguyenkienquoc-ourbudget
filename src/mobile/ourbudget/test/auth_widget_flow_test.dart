@@ -115,8 +115,10 @@ void main() {
   ) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(390, 844);
+    tester.view.padding = const FakeViewPadding(left: 24);
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPadding);
     final gateway = FakeAuth();
     final auth = AuthController(gateway, _EmptyWalletApi());
     await auth.restore();
@@ -132,10 +134,17 @@ void main() {
     final add = find.byTooltip('Ghi giao dịch');
     expect(add, findsOneWidget);
     expect(find.text('Thêm giao dịch'), findsNothing);
+    final addCenter = tester.getCenter(add);
     expect(
-      tester.getCenter(add).dx,
+      addCenter.dx,
       tester.view.physicalSize.width / tester.view.devicePixelRatio / 2,
     );
+    final messenger = ScaffoldMessenger.of(tester.element(add));
+    messenger.showSnackBar(const SnackBar(content: Text('Kiểm tra vị trí')));
+    await tester.pumpAndSettle();
+    expect(tester.getCenter(add), addCenter);
+    messenger.removeCurrentSnackBar();
+    await tester.pumpAndSettle();
     await tester.tap(add);
     await tester.pump();
     await tester.pumpAndSettle();
@@ -147,6 +156,7 @@ void main() {
       final target = find.byKey(ValueKey('tab-$tab'));
       await tester.tap(target);
       await tester.pump();
+      expect(tester.getCenter(add), addCenter);
       final destination = find
           .ancestor(
             of: target,
@@ -175,9 +185,6 @@ void main() {
     await tester.tap(find.byTooltip('Quay lại'));
     await tester.pumpAndSettle();
     expect(find.text('Tên đã sửa'), findsOneWidget);
-    final messenger = ScaffoldMessenger.of(
-      tester.element(find.text('Đăng xuất')),
-    );
     messenger.clearSnackBars();
     messenger.removeCurrentSnackBar();
     await tester.pumpAndSettle();

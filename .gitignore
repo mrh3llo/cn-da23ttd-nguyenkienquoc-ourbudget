@@ -12,6 +12,7 @@
 ~$*
 
 # Local server settings, OAuth downloads and runtime data
+**/local.properties
 /src/mobile/storage/secret/
 **/client_secret_*.json
 /src/backend/config/local.php
